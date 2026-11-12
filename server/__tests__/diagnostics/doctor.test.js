@@ -1,7 +1,8 @@
 // Doctor lines: fixed order, the same names and hints as the Build step's tool table, and the thresholds.
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { toolName } from '../../../src/studio/lib/toolWords.ts';
-import { cliOllamaProbe, countsLine, defaultDoctorFacade, formatDoctor, runDoctor, studioOllamaProbe } from '../../diagnostics/doctor.js';
+import { cliOllamaProbe, countsLine, defaultDoctorFacade, driveOf, formatDoctor, pathFor, runDoctor, studioOllamaProbe } from '../../diagnostics/doctor.js';
 import { PRO_PARTS } from '../../../src/proParts.js';
 import { MIN_RUSTC } from '../../studio/build/toolchain.js';
 
@@ -167,6 +168,31 @@ describe('runDoctor', () => {
   it('turns a throwing check into a problem line instead of failing', async () => {
     const r = await run({ freemem: fail('x') });
     expect(by(r, 'memory')).toMatchObject({ status: 'problem', action: 'Check again.' });
+  });
+});
+
+describe('path rules follow the described platform, on any host', () => {
+  it('picks win32 rules for win32 and posix rules otherwise', () => {
+    expect(pathFor({ platform: 'win32' })).toBe(path.win32);
+    expect(pathFor({ platform: 'linux' })).toBe(path.posix);
+    expect(pathFor({ platform: 'darwin' })).toBe(path.posix);
+  });
+
+  it('names the drive of a win32 path and the root of a posix path', () => {
+    expect(driveOf({ platform: 'win32' }, 'C:\\a\\b\\c')).toBe('C:');
+    expect(driveOf({ platform: 'linux' }, '/var/data/app')).toBe('/');
+  });
+
+  it('walks up a win32 path to its drive and a posix path to its root', async () => {
+    const seenWin = [];
+    const win = await run({ platform: 'win32', statfs: (d) => (seenWin.push(d), fail('ENOENT')()) }, { dataDir: 'C:\\a\\b\\c' });
+    expect(by(win, 'disk').status).toBe('problem');
+    expect(seenWin).toEqual(['C:\\a\\b\\c', 'C:\\a\\b', 'C:\\a', 'C:\\']);
+    expect(by(win, 'disk').action).toContain('C: is available');
+    const seenPosix = [];
+    const posix = await run({ platform: 'linux', statfs: (d) => (seenPosix.push(d), fail('ENOENT')()) }, { dataDir: '/a/b/c' });
+    expect(by(posix, 'disk').status).toBe('problem');
+    expect(seenPosix).toEqual(['/a/b/c', '/a/b', '/a', '/']);
   });
 });
 
