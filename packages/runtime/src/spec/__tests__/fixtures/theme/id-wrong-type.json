@@ -1,0 +1,19 @@
+{
+  "name": "id-wrong-type",
+  "description": "An id that is not text",
+  "theme": {
+    "id": [
+      "slate"
+    ]
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.id",
+        "code": "invalid_value"
+      }
+    ]
+  }
+}

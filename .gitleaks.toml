@@ -1,0 +1,68 @@
+# Local App Studio gitleaks config. Extends the default ruleset; allowlists only synthetic fixtures.
+title = "Local App Studio gitleaks config"
+
+[extend]
+useDefault = true
+
+# These test files assert that secret redaction works, so they must contain strings shaped like
+# real keys (AWS ids, JWTs, sk_ keys, Authorization headers, *_API_KEY sentinels). Every value
+# is a made-up placeholder. The allowlist is limited to named files and named rules so a real
+# secret pasted anywhere else, or a different rule firing in these files, is still caught.
+[[allowlists]]
+description = "Synthetic secret-shaped fixtures in redaction tests"
+condition = "AND"
+targetRules = ["aws-access-token", "generic-api-key", "jwt", "stripe-access-token", "curl-auth-header"]
+paths = [
+  '''^server/__tests__/(audit|auditHardening|auditIntegration|auditRedaction|aiAuditLocal|exportGuarantees|assistantValidate)\.test\.js$''',
+  '''^server/__tests__/diagnostics/report\.test\.js$''',
+  '''^src/utils/__tests__/assistantRedact\.test\.js$''',
+  '''^src/utils/assistantBuilders/__tests__/builders\.matrix\.test\.js$''',
+]
+
+# Public HMAC test vectors for the desktop sidecar handshake (the "secret" is the byte sequence
+# 0x00..0x1f, and RFC 4231 test keys). Limited to the two files and the generic rule.
+[[allowlists]]
+description = "Desktop handshake HMAC test vectors"
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = [
+  '''^server/__tests__/desktopAuth\.test\.js$''',
+  '''^src-tauri/src/secret\.rs$''',
+]
+
+# Cloud AI scope tests plant made-up sentinel strings (for example SENTINEL_NOTES_scope1) in a
+# variable named SECRET to prove withheld data never reaches the fake provider. Limited to the
+# one file and the generic rule.
+[[allowlists]]
+description = "Cloud AI scope test sentinels"
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = [
+  '''^server/__tests__/cloudScope\.test\.js$''',
+]
+
+# License tests pass synthetic store license keys (constants such as GUMROAD_KEY_2, fixtures built in
+# server/__tests__/license/fixtures/) as `licenseKey`. No real key is ever used in tests (docs/LICENSING.md). Limited to the license test folder and the generic rule.
+[[allowlists]]
+description = "Synthetic store license keys in license tests"
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = [
+  '''^server/__tests__/license/[^/]+\.(test\.js|js)$''',
+  '''^server/__tests__/license/fixtures/[^/]+\.js$''',
+]
+
+# The macOS release test (since removed, still in history) passed a placeholder Apple issuer id
+# (the documented example UUID shape, all zeros in the middle group) as APPLE_API_ISSUER. Limited
+# to that file, the generic rule and that exact value.
+[[allowlists]]
+description = "Synthetic APPLE_API_ISSUER placeholder in the macOS release test"
+condition = "AND"
+targetRules = ["generic-api-key"]
+paths = [
+  '''^server/__tests__/macosRelease\.test\.js$''',
+]
+regexTarget = "match"
+regexes = [
+  '''APPLE_API_ISSUER: ' ?69a6de7e-0000-47e3-e053-5b8c7c11a4d1''',
+]

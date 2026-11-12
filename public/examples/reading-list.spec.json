@@ -1,0 +1,352 @@
+{
+ "specVersion": 1,
+ "app": {
+  "name": "Reading List",
+  "slug": "reading-list",
+  "identifier": "com.example.readinglist",
+  "version": "1.0.0",
+  "description": "For a reader who keeps the books they want to read, are reading and have finished.",
+  "icon": "star"
+ },
+ "tables": [
+  {
+   "id": "shelves",
+   "label": "Shelves",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "Name",
+     "type": "text",
+     "required": true
+    }
+   ]
+  },
+  {
+   "id": "books",
+   "label": "Books",
+   "titleField": "title",
+   "fields": [
+    {
+     "id": "title",
+     "label": "Title",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "author",
+     "label": "Author",
+     "type": "text"
+    },
+    {
+     "id": "shelf",
+     "label": "Shelf",
+     "type": "reference",
+     "table": "shelves"
+    },
+    {
+     "id": "status",
+     "label": "Status",
+     "type": "select",
+     "options": [
+      "Want to read",
+      "Reading",
+      "Finished"
+     ],
+     "default": "Want to read"
+    },
+    {
+     "id": "verdict",
+     "label": "How was it",
+     "type": "select",
+     "options": [
+      "Loved it",
+      "Liked it",
+      "Not for me"
+     ]
+    },
+    {
+     "id": "finished",
+     "label": "Finished",
+     "type": "date"
+    }
+   ]
+  }
+ ],
+ "pages": [
+  {
+   "id": "home",
+   "title": "My books",
+   "route": "/",
+   "sources": [
+    {
+     "id": "reading",
+     "table": "books",
+     "where": [
+      {
+       "field": "status",
+       "op": "eq",
+       "value": "Reading"
+      }
+     ]
+    },
+    {
+     "id": "next_up",
+     "table": "books",
+     "where": [
+      {
+       "field": "status",
+       "op": "eq",
+       "value": "Want to read"
+      }
+     ],
+     "orderBy": [
+      {
+       "field": "title",
+       "dir": "asc"
+      }
+     ]
+    },
+    {
+     "id": "finished",
+     "table": "books",
+     "where": [
+      {
+       "field": "status",
+       "op": "eq",
+       "value": "Finished"
+      }
+     ],
+     "orderBy": [
+      {
+       "field": "finished",
+       "dir": "desc"
+      }
+     ]
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "k1",
+      "type": "Card",
+      "sizing": {
+       "width": "half"
+      },
+      "props": {
+       "title": "Reading now"
+      },
+      "children": [
+       {
+        "id": "a1",
+        "type": "RecordList",
+        "props": {
+         "source": "reading",
+         "titleField": "title",
+         "subtitleField": "author",
+         "rowAction": {
+          "action": "navigate",
+          "pageId": "book",
+          "withRecord": true
+         }
+        },
+        "children": []
+       }
+      ]
+     },
+     {
+      "id": "k2",
+      "type": "Card",
+      "sizing": {
+       "width": "half"
+      },
+      "props": {
+       "title": "Up next"
+      },
+      "children": [
+       {
+        "id": "a2",
+        "type": "RecordList",
+        "props": {
+         "source": "next_up",
+         "titleField": "title",
+         "subtitleField": "author",
+         "rowAction": {
+          "action": "navigate",
+          "pageId": "book",
+          "withRecord": true
+         }
+        },
+        "children": []
+       }
+      ]
+     },
+     {
+      "id": "co",
+      "type": "Collapsible",
+      "props": {
+       "title": "Finished"
+      },
+      "children": [
+       {
+        "id": "a3",
+        "type": "RecordList",
+        "props": {
+         "source": "finished",
+         "titleField": "title",
+         "subtitleField": "author",
+         "badgeField": "verdict",
+         "rowAction": {
+          "action": "navigate",
+          "pageId": "book",
+          "withRecord": true
+         }
+        },
+        "children": []
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "id": "book",
+   "title": "Book",
+   "route": "/books/:id",
+   "sources": [
+    {
+     "id": "book",
+     "table": "books",
+     "mode": "record"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "bl",
+      "type": "BackLink",
+      "props": {
+       "action": {
+        "action": "navigate",
+        "pageId": "home",
+        "withRecord": false
+       }
+      },
+      "children": "My books"
+     },
+     {
+      "id": "rd",
+      "type": "RecordDetail",
+      "props": {
+       "source": "book"
+      },
+      "children": []
+     },
+     {
+      "id": "rf",
+      "type": "RecordForm",
+      "props": {
+       "table": "books",
+       "mode": "edit",
+       "source": "book",
+       "fields": [
+        "status",
+        "verdict",
+        "finished",
+        "shelf"
+       ],
+       "submitLabel": "Save"
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "shelves",
+   "title": "Shelves",
+   "route": "/shelves",
+   "sources": [
+    {
+     "id": "shelves_all",
+     "table": "shelves"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "Shelves"
+      },
+      "children": [
+       {
+        "id": "qa",
+        "type": "QuickAdd",
+        "props": {
+         "table": "shelves",
+         "field": "name",
+         "placeholder": "New shelf"
+        },
+        "children": []
+       }
+      ]
+     },
+     {
+      "id": "rl",
+      "type": "RecordList",
+      "props": {
+       "source": "shelves_all",
+       "titleField": "name"
+      },
+      "children": []
+     }
+    ]
+   }
+  }
+ ],
+ "nav": [
+  {
+   "pageId": "home",
+   "label": "My books",
+   "icon": "star"
+  },
+  {
+   "pageId": "shelves",
+   "label": "Shelves",
+   "icon": "folder"
+  }
+ ],
+ "theme": {
+  "preset": "solid",
+  "radius": "sm",
+  "id": "paper"
+ },
+ "menu": {
+  "position": "top",
+  "style": "labels",
+  "end": [
+   {
+    "id": "qm",
+    "type": "QuickAdd",
+    "props": {
+     "table": "books",
+     "field": "title",
+     "placeholder": "Add a book",
+     "buttonLabel": "Add"
+    },
+    "children": []
+   }
+  ]
+ }
+}

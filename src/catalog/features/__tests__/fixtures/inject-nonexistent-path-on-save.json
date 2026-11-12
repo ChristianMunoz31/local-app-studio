@@ -1,0 +1,39 @@
+{
+  "description": "saving a feature with a binding to a missing path",
+  "mode": "validate",
+  "library": [],
+  "input": {
+    "id": "evil",
+    "label": "evil",
+    "description": "The evil feature.",
+    "params": [
+      {
+        "name": "title",
+        "label": "Title",
+        "type": "text"
+      }
+    ],
+    "fragment": {
+      "id": "s",
+      "type": "Section",
+      "props": {
+        "title": "T"
+      },
+      "children": []
+    },
+    "bindings": [
+      {
+        "param": "title",
+        "layer": "s",
+        "target": "props.nope"
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "invalid_binding",
+      "invalid_param"
+    ]
+  }
+}

@@ -1,0 +1,46 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      # Monthly keeps the CI minutes down. Patch and minor PRs auto-merge when green; major PRs come
+      # singly and are never auto-merged (pr-bot.yml labels them hold; prBot.js holds them regardless).
+      interval: monthly
+    # Wait before proposing a fresh release, so a compromised or yanked version is usually caught
+    # first. Security updates ignore the cooldown.
+    cooldown:
+      default-days: 7
+      semver-major-days: 14
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      prod-minor-patch:
+        dependency-type: production
+        update-types: [minor, patch]
+    ignore:
+      # Playwright upgrades are deliberate: bump @playwright/test, the container image in
+      # scripts/lib/playwrightImage.js (and ci.yml, flaky.yml) and the visual baselines together.
+      - dependency-name: "@playwright/test"
+      # A Tailwind major (already on 4 with @tailwindcss/postcss) can change the generated CSS, so it needs
+      # a visual pass; do it as its own task, not a monthly bump.
+      - dependency-name: tailwindcss
+        update-types: ["version-update:semver-major"]
+      # 0.5.3+ flags non-component exports under react-refresh/only-export-components;
+      # lift this pin once the lint run is clean on a newer version.
+      - dependency-name: eslint-plugin-react-refresh
+        versions: [">0.5.2"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      actions:
+        patterns: ["*"]

@@ -1,0 +1,16 @@
+{
+  "name": "legacy-preset-forest",
+  "description": "Legacy background forest",
+  "theme": {
+    "preset": "forest",
+    "radius": "lg"
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "forest",
+      "radius": "lg"
+    }
+  }
+}

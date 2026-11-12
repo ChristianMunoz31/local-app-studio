@@ -1,0 +1,13 @@
+{
+  "name": "legacy-missing-theme",
+  "description": "No theme block at all fills the default",
+  "theme": null,
+  "absent": true,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "aurora",
+      "radius": "md"
+    }
+  }
+}

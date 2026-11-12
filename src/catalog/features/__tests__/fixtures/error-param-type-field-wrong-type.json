@@ -1,0 +1,33 @@
+{
+  "description": "a text field where a number field is required",
+  "mode": "expand",
+  "library": [
+    "kpi_row"
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "k",
+        "type": "Feature",
+        "props": {
+          "featureId": "kpi_row",
+          "params": {
+            "source": "open_crews",
+            "amount": "name",
+            "title": "Crew size"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "param_type"
+    ]
+  }
+}

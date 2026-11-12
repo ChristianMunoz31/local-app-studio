@@ -1,0 +1,168 @@
+{
+  "tables": {
+    "people": {
+      "primaryKey": "id",
+      "autoNow": [
+        "created_at",
+        "updated_at"
+      ],
+      "columns": {
+        "id": "uuid",
+        "name": "text",
+        "created_at": "timestamptz",
+        "updated_at": "timestamptz"
+      }
+    },
+    "crews": {
+      "primaryKey": "id",
+      "autoNow": [
+        "created_at",
+        "updated_at"
+      ],
+      "columns": {
+        "id": "uuid",
+        "name": "text",
+        "size": "integer",
+        "lead_id": "uuid",
+        "status": "text",
+        "created_at": "timestamptz",
+        "updated_at": "timestamptz"
+      }
+    }
+  },
+  "importOrder": [
+    "people",
+    "crews"
+  ],
+  "foreignKeys": [
+    {
+      "table": "crews",
+      "column": "lead_id",
+      "references": {
+        "table": "people",
+        "column": "id"
+      },
+      "onDelete": "set null"
+    }
+  ],
+  "dataTables": [
+    {
+      "id": "people",
+      "label": "People",
+      "group": "Crew Roster",
+      "primaryKey": "id",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid"
+        },
+        {
+          "name": "name",
+          "type": "text"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz"
+        }
+      ]
+    },
+    {
+      "id": "crews",
+      "label": "Crews",
+      "group": "Crew Roster",
+      "primaryKey": "id",
+      "columns": [
+        {
+          "name": "id",
+          "type": "uuid"
+        },
+        {
+          "name": "name",
+          "type": "text"
+        },
+        {
+          "name": "size",
+          "type": "integer"
+        },
+        {
+          "name": "lead_id",
+          "type": "uuid"
+        },
+        {
+          "name": "status",
+          "type": "text"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamptz"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamptz"
+        }
+      ]
+    }
+  ],
+  "validators": {
+    "people": {
+      "name": {
+        "type": "text",
+        "label": "Name",
+        "required": true,
+        "maxLength": 500
+      }
+    },
+    "crews": {
+      "name": {
+        "type": "text",
+        "label": "Name",
+        "required": true,
+        "maxLength": 500
+      },
+      "size": {
+        "type": "integer",
+        "label": "Size",
+        "required": false,
+        "default": 1
+      },
+      "lead_id": {
+        "type": "reference",
+        "label": "Lead",
+        "required": false,
+        "table": "people"
+      },
+      "status": {
+        "type": "select",
+        "label": "Status",
+        "required": false,
+        "options": [
+          "active",
+          "paused"
+        ],
+        "default": "active"
+      }
+    }
+  },
+  "categories": [
+    {
+      "id": "people",
+      "default": false,
+      "noun": "people",
+      "plural": true
+    },
+    {
+      "id": "crews",
+      "default": false,
+      "noun": "crews",
+      "plural": true
+    }
+  ],
+  "titleFields": {
+    "people": "name",
+    "crews": "name"
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "description": "a layout without Feature nodes comes back unchanged",
+  "mode": "expand",
+  "library": [
+    "kpi_row"
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "a",
+        "type": "Section",
+        "props": {
+          "title": "A"
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": true,
+    "layout": {
+      "id": "root",
+      "type": "Page",
+      "props": {},
+      "children": [
+        {
+          "id": "a",
+          "type": "Section",
+          "props": {
+            "title": "A"
+          },
+          "children": []
+        }
+      ]
+    },
+    "used": []
+  }
+}

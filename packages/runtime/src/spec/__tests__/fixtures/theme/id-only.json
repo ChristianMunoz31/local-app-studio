@@ -1,0 +1,16 @@
+{
+  "name": "id-only",
+  "description": "A theme id with nothing else",
+  "theme": {
+    "id": "forest"
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "aurora",
+      "radius": "md",
+      "id": "forest"
+    }
+  }
+}

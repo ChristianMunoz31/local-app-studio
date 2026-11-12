@@ -1,0 +1,55 @@
+{
+  "description": "a binding to a path the fragment does not have",
+  "mode": "expand",
+  "library": [
+    {
+      "id": "evil",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "s",
+        "type": "Section",
+        "props": {
+          "title": "T"
+        },
+        "children": []
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "s",
+          "target": "props.nope"
+        }
+      ]
+    }
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "x",
+        "type": "Feature",
+        "props": {
+          "featureId": "evil",
+          "params": {
+            "title": "T2"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "invalid_binding"
+    ]
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "name": "overrides-without-id",
+  "description": "Overrides need a theme id",
+  "theme": {
+    "overrides": {
+      "accentHue": 10
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.overrides",
+        "code": "custom"
+      }
+    ]
+  }
+}

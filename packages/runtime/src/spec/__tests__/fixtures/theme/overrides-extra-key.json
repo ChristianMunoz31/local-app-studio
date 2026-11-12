@@ -1,0 +1,20 @@
+{
+  "name": "overrides-extra-key",
+  "description": "An unknown key inside overrides",
+  "theme": {
+    "id": "slate",
+    "overrides": {
+      "accent": "red"
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.overrides",
+        "code": "unrecognized_keys"
+      }
+    ]
+  }
+}

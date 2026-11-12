@@ -1,0 +1,16 @@
+{
+  "name": "side-icons",
+  "description": "A side column with icons and words",
+  "menu": {
+    "position": "side",
+    "style": "icons-and-labels"
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "menu": {
+      "position": "side",
+      "style": "icons-and-labels"
+    }
+  }
+}

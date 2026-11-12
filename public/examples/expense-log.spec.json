@@ -1,0 +1,337 @@
+{
+ "specVersion": 1,
+ "app": {
+  "name": "Expense Log",
+  "slug": "expense-log",
+  "identifier": "com.example.expenselog",
+  "version": "1.0.0",
+  "description": "For anyone who logs spending by category and wants to see the total for each month.",
+  "icon": "chart"
+ },
+ "tables": [
+  {
+   "id": "categories",
+   "label": "Categories",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "Name",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "budget",
+     "label": "Monthly budget",
+     "type": "real"
+    }
+   ]
+  },
+  {
+   "id": "expenses",
+   "label": "Expenses",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "What",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "amount",
+     "label": "Amount",
+     "type": "real",
+     "required": true
+    },
+    {
+     "id": "spent",
+     "label": "Spent",
+     "type": "date",
+     "required": true
+    },
+    {
+     "id": "category",
+     "label": "Category",
+     "type": "reference",
+     "table": "categories"
+    },
+    {
+     "id": "paid_with",
+     "label": "Paid with",
+     "type": "select",
+     "options": [
+      "Card",
+      "Cash",
+      "Transfer"
+     ],
+     "default": "Card"
+    }
+   ]
+  }
+ ],
+ "pages": [
+  {
+   "id": "home",
+   "title": "Overview",
+   "route": "/",
+   "sources": [
+    {
+     "id": "all_spent",
+     "table": "expenses"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "s1",
+      "type": "StatCard",
+      "props": {
+       "source": "all_spent",
+       "stat": "sum",
+       "field": "amount",
+       "label": "Spent in all",
+       "icon": "chart"
+      },
+      "children": []
+     },
+     {
+      "id": "c1",
+      "type": "Chart",
+      "sizing": {
+       "width": "half"
+      },
+      "props": {
+       "source": "all_spent",
+       "groupBy": "category",
+       "measure": "sum",
+       "field": "amount",
+       "title": "By category"
+      },
+      "children": []
+     },
+     {
+      "id": "c2",
+      "type": "Chart",
+      "sizing": {
+       "width": "half"
+      },
+      "props": {
+       "source": "all_spent",
+       "groupBy": "spent",
+       "kind": "line",
+       "measure": "sum",
+       "field": "amount",
+       "title": "By month"
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "expenses",
+   "title": "Expenses",
+   "route": "/expenses",
+   "sources": [
+    {
+     "id": "expenses_all",
+     "table": "expenses",
+     "orderBy": [
+      {
+       "field": "spent",
+       "dir": "desc"
+      }
+     ]
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "Expenses"
+      },
+      "children": [
+       {
+        "id": "b1",
+        "type": "Button",
+        "props": {
+         "action": {
+          "action": "open-form",
+          "table": "expenses",
+          "mode": "create"
+         }
+        },
+        "children": "Log expense"
+       }
+      ]
+     },
+     {
+      "id": "fb",
+      "type": "FilterBar",
+      "props": {
+       "source": "expenses_all",
+       "fields": [
+        "category",
+        "spent",
+        "paid_with"
+       ]
+      },
+      "children": []
+     },
+     {
+      "id": "t1",
+      "type": "DataTable",
+      "props": {
+       "source": "expenses_all",
+       "columns": [
+        "name",
+        "amount",
+        "spent",
+        "category",
+        "paid_with"
+       ]
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "categories",
+   "title": "Categories",
+   "route": "/categories",
+   "sources": [
+    {
+     "id": "categories_all",
+     "table": "categories"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "Categories"
+      },
+      "children": [
+       {
+        "id": "qa",
+        "type": "QuickAdd",
+        "props": {
+         "table": "categories",
+         "field": "name",
+         "placeholder": "New category"
+        },
+        "children": []
+       }
+      ]
+     },
+     {
+      "id": "rl",
+      "type": "RecordList",
+      "props": {
+       "source": "categories_all",
+       "titleField": "name",
+       "subtitleField": "budget",
+       "rowAction": {
+        "action": "navigate",
+        "pageId": "category",
+        "withRecord": true
+       }
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "category",
+   "title": "Category",
+   "route": "/categories/:id",
+   "sources": [
+    {
+     "id": "category",
+     "table": "categories",
+     "mode": "record"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "bc",
+      "type": "Breadcrumb",
+      "props": {
+       "page": "categories",
+       "source": "category"
+      },
+      "children": []
+     },
+     {
+      "id": "rd",
+      "type": "RecordDetail",
+      "props": {
+       "source": "category"
+      },
+      "children": []
+     },
+     {
+      "id": "rf",
+      "type": "RecordForm",
+      "props": {
+       "table": "categories",
+       "mode": "edit",
+       "source": "category",
+       "fields": [
+        "name",
+        "budget"
+       ]
+      },
+      "children": []
+     }
+    ]
+   }
+  }
+ ],
+ "nav": [
+  {
+   "pageId": "home",
+   "label": "Overview",
+   "icon": "chart"
+  },
+  {
+   "pageId": "expenses",
+   "label": "Expenses",
+   "icon": "list"
+  },
+  {
+   "pageId": "categories",
+   "label": "Categories",
+   "icon": "tag"
+  }
+ ],
+ "theme": {
+  "preset": "ocean",
+  "radius": "lg",
+  "id": "midnight"
+ },
+ "menu": {
+  "position": "top",
+  "style": "icons-and-labels"
+ }
+}

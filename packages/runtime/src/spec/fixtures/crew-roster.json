@@ -1,0 +1,59 @@
+{
+  "specVersion": 1,
+  "app": {
+    "name": "Crew Roster",
+    "slug": "crew-roster",
+    "identifier": "com.example.crewroster",
+    "version": "1.0.0",
+    "description": "Crews and their leads",
+    "icon": "users"
+  },
+  "tables": [
+    {
+      "id": "people",
+      "label": "People",
+      "titleField": "name",
+      "fields": [
+        { "id": "name", "label": "Name", "type": "text", "required": true }
+      ]
+    },
+    {
+      "id": "crews",
+      "label": "Crews",
+      "titleField": "name",
+      "fields": [
+        { "id": "name", "label": "Name", "type": "text", "required": true },
+        { "id": "size", "label": "Size", "type": "integer", "default": 1 },
+        { "id": "lead_id", "label": "Lead", "type": "reference", "table": "people" },
+        { "id": "status", "label": "Status", "type": "select", "options": ["active", "paused"], "default": "active" }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "home",
+      "title": "Home",
+      "route": "/",
+      "sources": [
+        {
+          "id": "open_crews",
+          "table": "crews",
+          "where": [{ "field": "status", "op": "eq", "value": "active" }],
+          "orderBy": [{ "field": "name", "dir": "asc" }],
+          "limit": 50
+        }
+      ],
+      "layout": {
+        "id": "root",
+        "type": "Page",
+        "props": {},
+        "children": [
+          { "id": "h1", "type": "Heading", "props": { "size": "lg" }, "children": "Open crews" },
+          { "id": "t1", "type": "DataTable", "props": { "source": "open_crews", "columns": ["name", "size", "status"] }, "children": [] }
+        ]
+      }
+    }
+  ],
+  "nav": [{ "pageId": "home", "label": "Home", "icon": "home" }],
+  "theme": { "preset": "aurora", "radius": "md" }
+}

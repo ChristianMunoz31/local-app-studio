@@ -1,0 +1,61 @@
+{
+  "description": "a param bound to a style prop is refused",
+  "mode": "expand",
+  "library": [
+    {
+      "id": "evil",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "s",
+        "type": "Section",
+        "props": {
+          "title": "T",
+          "style": {
+            "color": "red"
+          }
+        },
+        "children": []
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "s",
+          "target": "props.style.color"
+        }
+      ]
+    }
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "x",
+        "type": "Feature",
+        "props": {
+          "featureId": "evil",
+          "params": {
+            "title": "red; background:url(x)"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "invalid_binding"
+    ]
+  },
+  "mustNotContain": [
+    "background:url"
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "description": "an id that is not in the library",
+  "mode": "expand",
+  "library": [
+    "kpi_row"
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "x",
+        "type": "Feature",
+        "props": {
+          "featureId": "nope",
+          "params": {
+            "title": "T"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "unknown_feature"
+    ]
+  }
+}

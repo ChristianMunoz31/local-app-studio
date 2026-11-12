@@ -1,0 +1,33 @@
+{
+  "description": "a source id that is not on the page",
+  "mode": "expand",
+  "library": [
+    "kpi_row"
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "k",
+        "type": "Feature",
+        "props": {
+          "featureId": "kpi_row",
+          "params": {
+            "source": "ghost",
+            "amount": "size",
+            "title": "Crew size"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "param_type"
+    ]
+  }
+}

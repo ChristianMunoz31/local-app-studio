@@ -1,0 +1,313 @@
+{
+ "specVersion": 1,
+ "app": {
+  "name": "Job Tracker",
+  "slug": "job-tracker",
+  "identifier": "com.example.jobtracker",
+  "version": "1.0.0",
+  "description": "For a contractor or freelancer who tracks jobs, their due dates and the steps left on each.",
+  "icon": "briefcase"
+ },
+ "tables": [
+  {
+   "id": "jobs",
+   "label": "Jobs",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "Name",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "client",
+     "label": "Client",
+     "type": "text"
+    },
+    {
+     "id": "status",
+     "label": "Status",
+     "type": "select",
+     "options": [
+      "Quoted",
+      "Booked",
+      "In progress",
+      "Done"
+     ],
+     "default": "Booked"
+    },
+    {
+     "id": "due",
+     "label": "Due",
+     "type": "date"
+    },
+    {
+     "id": "price",
+     "label": "Price",
+     "type": "real"
+    }
+   ]
+  },
+  {
+   "id": "steps",
+   "label": "Steps",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "Name",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "job",
+     "label": "Job",
+     "type": "reference",
+     "table": "jobs"
+    },
+    {
+     "id": "done",
+     "label": "Done",
+     "type": "boolean",
+     "default": false
+    }
+   ]
+  }
+ ],
+ "pages": [
+  {
+   "id": "home",
+   "title": "Overview",
+   "route": "/",
+   "sources": [
+    {
+     "id": "open_steps",
+     "table": "steps",
+     "where": [
+      {
+       "field": "done",
+       "op": "eq",
+       "value": false
+      }
+     ]
+    },
+    {
+     "id": "done_steps",
+     "table": "steps",
+     "where": [
+      {
+       "field": "done",
+       "op": "eq",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": "jobs_all",
+     "table": "jobs"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "This week"
+      },
+      "children": [
+       {
+        "id": "b1",
+        "type": "Button",
+        "props": {
+         "action": {
+          "action": "open-form",
+          "table": "jobs",
+          "mode": "create"
+         }
+        },
+        "children": "Add job"
+       }
+      ]
+     },
+     {
+      "id": "pb",
+      "type": "ProgressBar",
+      "props": {
+       "source": "done_steps",
+       "stat": "count",
+       "target": 25,
+       "label": "Steps done"
+      },
+      "children": []
+     },
+     {
+      "id": "ch",
+      "type": "Chart",
+      "sizing": {
+       "width": "half"
+      },
+      "props": {
+       "source": "jobs_all",
+       "groupBy": "status",
+       "title": "Jobs by status"
+      },
+      "children": []
+     },
+     {
+      "id": "cl",
+      "type": "Checklist",
+      "sizing": {
+       "width": "half"
+      },
+      "props": {
+       "source": "open_steps",
+       "field": "done",
+       "titleField": "name",
+       "emptyText": "Nothing left to do."
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "jobs",
+   "title": "Jobs",
+   "route": "/jobs",
+   "sources": [
+    {
+     "id": "jobs_by_due",
+     "table": "jobs",
+     "orderBy": [
+      {
+       "field": "due",
+       "dir": "asc"
+      }
+     ]
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "t1",
+      "type": "DataTable",
+      "props": {
+       "source": "jobs_by_due",
+       "columns": [
+        "name",
+        "client",
+        "status",
+        "due",
+        "price"
+       ],
+       "rowAction": {
+        "action": "navigate",
+        "pageId": "job",
+        "withRecord": true
+       }
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "job",
+   "title": "Job",
+   "route": "/jobs/:id",
+   "sources": [
+    {
+     "id": "job",
+     "table": "jobs",
+     "mode": "record"
+    },
+    {
+     "id": "steps_all",
+     "table": "steps"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "bl",
+      "type": "BackLink",
+      "props": {
+       "action": {
+        "action": "navigate",
+        "pageId": "jobs",
+        "withRecord": false
+       }
+      },
+      "children": "All jobs"
+     },
+     {
+      "id": "rd",
+      "type": "RecordDetail",
+      "props": {
+       "source": "job"
+      },
+      "children": []
+     },
+     {
+      "id": "rf",
+      "type": "RecordForm",
+      "props": {
+       "table": "steps",
+       "fields": [
+        "name",
+        "job"
+       ],
+       "submitLabel": "Add step"
+      },
+      "children": []
+     },
+     {
+      "id": "t1",
+      "type": "DataTable",
+      "props": {
+       "source": "steps_all",
+       "columns": [
+        "name",
+        "job",
+        "done"
+       ]
+      },
+      "children": []
+     }
+    ]
+   }
+  }
+ ],
+ "nav": [
+  {
+   "pageId": "home",
+   "label": "Overview",
+   "icon": "home"
+  },
+  {
+   "pageId": "jobs",
+   "label": "Jobs",
+   "icon": "briefcase"
+  }
+ ],
+ "theme": {
+  "preset": "ocean",
+  "radius": "md",
+  "id": "ocean"
+ },
+ "menu": {
+  "position": "top",
+  "style": "labels"
+ }
+}

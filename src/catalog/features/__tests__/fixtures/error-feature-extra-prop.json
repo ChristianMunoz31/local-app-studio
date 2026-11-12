@@ -1,0 +1,34 @@
+{
+  "description": "a Feature node takes exactly featureId and params",
+  "mode": "expand",
+  "library": [
+    "kpi_row"
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "k",
+        "type": "Feature",
+        "props": {
+          "featureId": "kpi_row",
+          "params": {
+            "source": "open_crews",
+            "amount": "size",
+            "title": "Crew size"
+          },
+          "className": "x"
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "feature_props"
+    ]
+  }
+}

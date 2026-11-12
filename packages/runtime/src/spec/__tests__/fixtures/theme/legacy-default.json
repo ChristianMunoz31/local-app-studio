@@ -1,0 +1,16 @@
+{
+  "name": "legacy-default",
+  "description": "The default legacy block",
+  "theme": {
+    "preset": "aurora",
+    "radius": "md"
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "aurora",
+      "radius": "md"
+    }
+  }
+}

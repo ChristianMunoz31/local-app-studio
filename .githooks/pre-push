@@ -1,0 +1,3 @@
+#!/bin/sh
+# Local App Studio pre-push: runs `npm run gate -- --quick`. Skip once with GATE_SKIP=1 git push.
+exec node scripts/ci/prePush.js "$@"

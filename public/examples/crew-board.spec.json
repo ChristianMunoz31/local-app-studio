@@ -1,0 +1,296 @@
+{
+ "specVersion": 1,
+ "app": {
+  "name": "Crew Board",
+  "slug": "crew-board",
+  "identifier": "com.example.crewboard",
+  "version": "1.0.0",
+  "description": "For a small trade business that plans who works on which crew and who leads it.",
+  "icon": "users"
+ },
+ "tables": [
+  {
+   "id": "crews",
+   "label": "Crews",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "Name",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "area",
+     "label": "Area",
+     "type": "select",
+     "options": [
+      "North",
+      "South",
+      "East",
+      "West"
+     ]
+    },
+    {
+     "id": "status",
+     "label": "Status",
+     "type": "select",
+     "options": [
+      "Active",
+      "Paused"
+     ],
+     "default": "Active"
+    }
+   ]
+  },
+  {
+   "id": "people",
+   "label": "People",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "Name",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "role",
+     "label": "Role",
+     "type": "select",
+     "options": [
+      "Lead",
+      "Crew",
+      "Apprentice"
+     ],
+     "default": "Crew"
+    },
+    {
+     "id": "crew",
+     "label": "Crew",
+     "type": "reference",
+     "table": "crews"
+    },
+    {
+     "id": "available",
+     "label": "Available",
+     "type": "boolean",
+     "default": true
+    },
+    {
+     "id": "started",
+     "label": "Started",
+     "type": "date"
+    }
+   ]
+  }
+ ],
+ "pages": [
+  {
+   "id": "home",
+   "title": "People",
+   "route": "/",
+   "sources": [
+    {
+     "id": "people_all",
+     "table": "people",
+     "orderBy": [
+      {
+       "field": "name",
+       "dir": "asc"
+      }
+     ]
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "People"
+      },
+      "children": [
+       {
+        "id": "b1",
+        "type": "Button",
+        "props": {
+         "action": {
+          "action": "open-form",
+          "table": "people",
+          "mode": "create"
+         }
+        },
+        "children": "Add person"
+       }
+      ]
+     },
+     {
+      "id": "fb",
+      "type": "FilterBar",
+      "props": {
+       "source": "people_all",
+       "fields": [
+        "crew",
+        "role",
+        "available"
+       ]
+      },
+      "children": []
+     },
+     {
+      "id": "t1",
+      "type": "DataTable",
+      "props": {
+       "source": "people_all",
+       "columns": [
+        "name",
+        "role",
+        "crew",
+        "available",
+        "started"
+       ]
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "crews",
+   "title": "Crews",
+   "route": "/crews",
+   "sources": [
+    {
+     "id": "crews_all",
+     "table": "crews",
+     "orderBy": [
+      {
+       "field": "name",
+       "dir": "asc"
+      }
+     ]
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "Crews"
+      },
+      "children": [
+       {
+        "id": "b1",
+        "type": "Button",
+        "props": {
+         "action": {
+          "action": "open-form",
+          "table": "crews",
+          "mode": "create"
+         }
+        },
+        "children": "Add crew"
+       }
+      ]
+     },
+     {
+      "id": "rl",
+      "type": "RecordList",
+      "props": {
+       "source": "crews_all",
+       "titleField": "name",
+       "subtitleField": "area",
+       "badgeField": "status",
+       "rowAction": {
+        "action": "navigate",
+        "pageId": "crew",
+        "withRecord": true
+       }
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "crew",
+   "title": "Crew",
+   "route": "/crews/:id",
+   "sources": [
+    {
+     "id": "crew",
+     "table": "crews",
+     "mode": "record"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "bc",
+      "type": "Breadcrumb",
+      "props": {
+       "page": "crews",
+       "source": "crew"
+      },
+      "children": []
+     },
+     {
+      "id": "rd",
+      "type": "RecordDetail",
+      "props": {
+       "source": "crew"
+      },
+      "children": []
+     },
+     {
+      "id": "rf",
+      "type": "RecordForm",
+      "props": {
+       "table": "crews",
+       "mode": "edit",
+       "source": "crew",
+       "fields": [
+        "status",
+        "area"
+       ],
+       "submitLabel": "Save crew"
+      },
+      "children": []
+     }
+    ]
+   }
+  }
+ ],
+ "nav": [
+  {
+   "pageId": "home",
+   "label": "People",
+   "icon": "users"
+  },
+  {
+   "pageId": "crews",
+   "label": "Crews",
+   "icon": "truck"
+  }
+ ],
+ "theme": {
+  "preset": "forest",
+  "radius": "md",
+  "id": "forest"
+ },
+ "menu": {
+  "position": "top",
+  "style": "icons-and-labels"
+ }
+}

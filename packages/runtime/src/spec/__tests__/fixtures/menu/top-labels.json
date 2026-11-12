@@ -1,0 +1,16 @@
+{
+  "name": "top-labels",
+  "description": "A top bar with words only",
+  "menu": {
+    "position": "top",
+    "style": "labels"
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "menu": {
+      "position": "top",
+      "style": "labels"
+    }
+  }
+}

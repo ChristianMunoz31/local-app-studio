@@ -1,0 +1,15 @@
+{
+  "name": "theme-not-object",
+  "description": "A theme that is not an object",
+  "theme": "forest",
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme",
+        "code": "invalid_type"
+      }
+    ]
+  }
+}

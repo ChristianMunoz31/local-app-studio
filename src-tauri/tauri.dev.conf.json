@@ -1,0 +1,22 @@
+{
+  "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "Local App Studio Dev",
+  "mainBinaryName": "AppDev",
+  "identifier": "com.neuralfoundry.localappstudio.dev",
+  "bundle": {
+    "shortDescription": "Local App Studio Dev: a test build of Local App Studio that installs next to it",
+    "externalBin": ["binaries/local-app-studio-dev-server"],
+    "icon": [
+      "icons/dev/32x32.png",
+      "icons/dev/128x128.png",
+      "icons/dev/128x128@2x.png",
+      "icons/dev/icon.icns",
+      "icons/dev/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installerHooks": "installer/hooks.dev.nsh"
+      }
+    }
+  }
+}

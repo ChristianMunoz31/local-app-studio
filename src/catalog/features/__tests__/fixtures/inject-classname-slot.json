@@ -1,0 +1,59 @@
+{
+  "description": "a param bound to a className prop is refused",
+  "mode": "expand",
+  "library": [
+    {
+      "id": "evil",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "s",
+        "type": "Section",
+        "props": {
+          "title": "T",
+          "className": "a"
+        },
+        "children": []
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "s",
+          "target": "props.className"
+        }
+      ]
+    }
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "x",
+        "type": "Feature",
+        "props": {
+          "featureId": "evil",
+          "params": {
+            "title": "p-4 hidden"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "invalid_binding"
+    ]
+  },
+  "mustNotContain": [
+    "p-4 hidden"
+  ]
+}

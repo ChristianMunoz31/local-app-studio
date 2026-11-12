@@ -1,0 +1,176 @@
+{
+  "description": "three levels is the limit and works",
+  "mode": "expand",
+  "library": [
+    {
+      "id": "l1",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "h",
+        "type": "Heading",
+        "props": {},
+        "children": "Placeholder"
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "h",
+          "target": "children"
+        }
+      ]
+    },
+    {
+      "id": "l2",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "w",
+        "type": "Section",
+        "props": {},
+        "children": [
+          {
+            "id": "n",
+            "type": "Feature",
+            "props": {
+              "featureId": "l1",
+              "params": {
+                "title": "x"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "n",
+          "target": "props.params.title"
+        }
+      ]
+    },
+    {
+      "id": "l3",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "w",
+        "type": "Section",
+        "props": {},
+        "children": [
+          {
+            "id": "n",
+            "type": "Feature",
+            "props": {
+              "featureId": "l2",
+              "params": {
+                "title": "x"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "n",
+          "target": "props.params.title"
+        }
+      ]
+    }
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "b",
+        "type": "Feature",
+        "props": {
+          "featureId": "l3",
+          "params": {
+            "title": "T"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": true,
+    "layout": {
+      "id": "root",
+      "type": "Page",
+      "props": {},
+      "children": [
+        {
+          "id": "b",
+          "type": "Section",
+          "name": "l3",
+          "props": {},
+          "feature": {
+            "id": "l3",
+            "version": 1,
+            "params": {
+              "title": "T"
+            }
+          },
+          "children": [
+            {
+              "id": "b-1",
+              "type": "Section",
+              "name": "l2",
+              "props": {},
+              "feature": {
+                "id": "l2",
+                "version": 1,
+                "params": {
+                  "title": "T"
+                }
+              },
+              "children": [
+                {
+                  "id": "b-2",
+                  "type": "Heading",
+                  "name": "l1",
+                  "props": {},
+                  "children": "T",
+                  "feature": {
+                    "id": "l1",
+                    "version": 1,
+                    "params": {
+                      "title": "T"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    "used": [
+      "l3",
+      "l2",
+      "l1"
+    ]
+  }
+}

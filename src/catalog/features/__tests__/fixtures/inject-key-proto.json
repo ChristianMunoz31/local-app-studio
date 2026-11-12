@@ -1,0 +1,35 @@
+{
+  "description": "a param key __proto__ (an own key from JSON) is an unknown param",
+  "mode": "expand",
+  "library": [
+    "kpi_row"
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "k",
+        "type": "Feature",
+        "props": {
+          "featureId": "kpi_row",
+          "params": {
+            "source": "open_crews",
+            "amount": "size",
+            "title": "T",
+            "__proto__": "x"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "unknown_param"
+    ]
+  },
+  "checkPrototype": true
+}

@@ -1,0 +1,17 @@
+{
+  "name": "unknown-id",
+  "description": "An id that is not a theme",
+  "theme": {
+    "id": "neon"
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.id",
+        "code": "invalid_value"
+      }
+    ]
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "name": "override-accent-hue",
+  "description": "Accent hue override",
+  "theme": {
+    "id": "ocean",
+    "overrides": {
+      "accentHue": 200
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "aurora",
+      "radius": "md",
+      "id": "ocean",
+      "overrides": {
+        "accentHue": 200
+      }
+    }
+  }
+}

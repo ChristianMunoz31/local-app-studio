@@ -1,0 +1,17 @@
+{
+  "name": "unknown-position",
+  "description": "A position that is not top or side",
+  "menu": {
+    "position": "bottom"
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "menu.position",
+        "code": "invalid_value"
+      }
+    ]
+  }
+}

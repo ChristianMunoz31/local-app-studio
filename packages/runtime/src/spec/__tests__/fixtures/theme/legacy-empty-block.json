@@ -1,0 +1,13 @@
+{
+  "name": "legacy-empty-block",
+  "description": "An empty block fills both defaults",
+  "theme": {},
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "aurora",
+      "radius": "md"
+    }
+  }
+}

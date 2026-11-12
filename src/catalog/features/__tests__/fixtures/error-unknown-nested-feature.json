@@ -1,0 +1,59 @@
+{
+  "description": "a library feature places an id that is not in the library",
+  "mode": "expand",
+  "library": [
+    {
+      "id": "wrap",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "w",
+        "type": "Section",
+        "props": {},
+        "children": [
+          {
+            "id": "n",
+            "type": "Feature",
+            "props": {
+              "featureId": "ghost",
+              "params": {
+                "title": "x"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      "bindings": []
+    }
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "x",
+        "type": "Feature",
+        "props": {
+          "featureId": "wrap",
+          "params": {
+            "title": "T"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "unknown_feature"
+    ]
+  }
+}

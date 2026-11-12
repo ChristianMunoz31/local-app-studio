@@ -1,0 +1,66 @@
+name: Bug report
+description: Something in Local App Studio is not working
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Security problem? Do not file it here. Read SECURITY.md in this repository and use "Report a vulnerability" on the Security tab.
+
+        Please do not paste your own data or screenshots that show it. Describe what happened instead.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what you saw instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to repeat it
+      description: Numbered steps from a fresh start, if you know them.
+  - type: input
+    id: version
+    attributes:
+      label: Local App Studio version
+      description: The version in the About dialog (Help > About Local App Studio), the release you downloaded, or the commit if you run from source.
+    validations:
+      required: true
+  - type: dropdown
+    id: how
+    attributes:
+      label: How you run it
+      options:
+        - From source in a browser (npm start)
+        - Desktop shell from source (npm run desktop:dev)
+        - An installed build
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      description: Only Windows is tested.
+      options: [Windows]
+    validations:
+      required: true
+  - type: input
+    id: ram
+    attributes:
+      label: RAM
+      description: For example 8 GB. Helps with Assistant slowness reports.
+  - type: input
+    id: model
+    attributes:
+      label: Ollama model
+      description: For example qwen2.5:3b. Leave empty if Assistant is not involved.
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before you send
+      options:
+        - label: This is not a security problem (those go through SECURITY.md).
+          required: true
+        - label: I removed any personal data from this report.
+          required: true

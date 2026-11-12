@@ -1,0 +1,7 @@
+{
+  "studio": { "bundleKb": 3807, "bundleGzipKb": 1153 },
+  "runtime": { "bundleKb": 3497, "bundleGzipKb": 1053 },
+  "exeKb": {
+    "win32-arm64": 83712
+  }
+}

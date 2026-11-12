@@ -1,0 +1,22 @@
+{
+  "name": "override-mode",
+  "description": "Mode override",
+  "theme": {
+    "id": "paper",
+    "overrides": {
+      "mode": "dark"
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "aurora",
+      "radius": "md",
+      "id": "paper",
+      "overrides": {
+        "mode": "dark"
+      }
+    }
+  }
+}

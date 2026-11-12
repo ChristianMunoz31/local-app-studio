@@ -1,0 +1,16 @@
+{
+  "name": "legacy-preset-aurora",
+  "description": "Legacy background aurora",
+  "theme": {
+    "preset": "aurora",
+    "radius": "lg"
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "aurora",
+      "radius": "lg"
+    }
+  }
+}

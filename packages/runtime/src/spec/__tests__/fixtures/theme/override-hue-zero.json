@@ -1,0 +1,22 @@
+{
+  "name": "override-hue-zero",
+  "description": "Hue 0 is a valid hue",
+  "theme": {
+    "id": "rose",
+    "overrides": {
+      "accentHue": 0
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "aurora",
+      "radius": "md",
+      "id": "rose",
+      "overrides": {
+        "accentHue": 0
+      }
+    }
+  }
+}

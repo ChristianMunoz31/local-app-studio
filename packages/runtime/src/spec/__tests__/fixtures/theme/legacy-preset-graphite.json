@@ -1,0 +1,16 @@
+{
+  "name": "legacy-preset-graphite",
+  "description": "Legacy background graphite",
+  "theme": {
+    "preset": "graphite",
+    "radius": "lg"
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "graphite",
+      "radius": "lg"
+    }
+  }
+}

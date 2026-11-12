@@ -1,0 +1,138 @@
+{
+  "_comment": "Deliberate public values the personal-data check must not flag. A string exempts a finding only when it equals the WHOLE match (an email, phone, card, or home path such as Users/sam); a denylist term is exempt only inside an allowed string with non-word edges. So an allowed short address never excuses a longer one that ends with it, and Users/sam never excuses Users/samantha. `strings` apply to every file (empty by default; add your own public handle here if the check flags it). `perPath` entries apply only to files matching the glob: they hold synthetic fixtures in redaction, path and IP tests. `paths` are globs of whole files to skip; keep that list empty if possible.",
+  "paths": [],
+  "strings": [],
+  "perPath": [
+    {
+      "path": "server/__tests__/auditHardening.test.js",
+      "strings": [
+        "4111111111111111",
+        "4111 1111 1111 1111"
+      ]
+    },
+    {
+      "path": "server/__tests__/auditRedaction.test.js",
+      "strings": [
+        "a.b+tag@sub.example.co.uk",
+        "c@d.io"
+      ]
+    },
+    {
+      "path": "server/__tests__/initApp.test.js",
+      "strings": [
+        "support+x@mail.example.co.uk",
+        "me@app.dev"
+      ]
+    },
+    {
+      "path": "server/__tests__/exportCsvInjection.test.js",
+      "strings": [
+        "x@y.com"
+      ]
+    },
+    {
+      "path": "src/components/assistant/__tests__/AssistantAdvisor.test.jsx",
+      "strings": [
+        "x@y.io"
+      ]
+    },
+    {
+      "path": "src/utils/__tests__/assistantRedact.test.js",
+      "strings": [
+        "pw@host.io"
+      ]
+    },
+    {
+      "path": "server/__tests__/paths.test.js",
+      "strings": [
+        "Users\\sam",
+        "/home/sam",
+        "/Users/sam"
+      ]
+    },
+    {
+      "path": "server/__tests__/assistantToolErrors.test.js",
+      "strings": [
+        "/home/someone"
+      ]
+    },
+    {
+      "path": "server/__tests__/updateCheck.test.js",
+      "strings": [
+        "1.2.3.4"
+      ]
+    },
+    {
+      "path": "src-tauri/README.md",
+      "strings": [
+        "128x128@2x.png"
+      ]
+    },
+    {
+      "path": "src-tauri/tauri.conf.json",
+      "strings": [
+        "128x128@2x.png"
+      ]
+    },
+    {
+      "path": "server/__tests__/cloudBaseUrl.test.js",
+      "strings": [
+        "100.64.0.1",
+        "100.127.255.255",
+        "192.0.0.8",
+        "198.18.0.1",
+        "198.19.255.255",
+        "224.0.0.1",
+        "239.255.255.255",
+        "240.0.0.1",
+        "8.8.8.8",
+        "1.1.1.1",
+        "93.184.216.34",
+        "172.15.255.255",
+        "172.32.0.1",
+        "100.63.255.255",
+        "100.128.0.1",
+        "169.253.1.1",
+        "198.17.255.255",
+        "198.20.0.1",
+        "223.255.255.255"
+      ]
+    },
+    {
+      "path": "server/__tests__/cloudLeaks.test.js",
+      "strings": [
+        "192.88.99.1",
+        "8.8.8.8"
+      ]
+    },
+    {
+      "path": "server/ai/cloudGuard.js",
+      "strings": [
+        "100.64.0.0",
+        "192.0.0.0",
+        "192.88.99.0",
+        "198.18.0.0",
+        "224.0.0.0",
+        "240.0.0.0"
+      ]
+    },
+    {
+      "path": "scripts/desktop/icons.js",
+      "strings": [
+        "128x128@2x.png"
+      ]
+    },
+    {
+      "path": "server/__tests__/devChannelBuild.test.js",
+      "strings": [
+        "128x128@2x.png"
+      ]
+    },
+    {
+      "path": "src-tauri/tauri.dev.conf.json",
+      "strings": [
+        "128x128@2x.png"
+      ]
+    }
+  ]
+}

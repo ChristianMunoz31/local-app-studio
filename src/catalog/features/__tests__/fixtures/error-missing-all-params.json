@@ -1,0 +1,31 @@
+{
+  "description": "no params at all",
+  "mode": "expand",
+  "library": [
+    "kpi_row"
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "k",
+        "type": "Feature",
+        "props": {
+          "featureId": "kpi_row",
+          "params": {}
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "missing_param",
+      "missing_param",
+      "missing_param"
+    ]
+  }
+}

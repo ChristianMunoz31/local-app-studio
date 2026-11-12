@@ -1,0 +1,40 @@
+{
+  "description": "saving a feature that binds className",
+  "mode": "validate",
+  "library": [],
+  "input": {
+    "id": "evil",
+    "label": "evil",
+    "description": "The evil feature.",
+    "params": [
+      {
+        "name": "title",
+        "label": "Title",
+        "type": "text"
+      }
+    ],
+    "fragment": {
+      "id": "s",
+      "type": "Section",
+      "props": {
+        "title": "T",
+        "className": "a"
+      },
+      "children": []
+    },
+    "bindings": [
+      {
+        "param": "title",
+        "layer": "s",
+        "target": "props.className"
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "invalid_binding",
+      "invalid_param"
+    ]
+  }
+}

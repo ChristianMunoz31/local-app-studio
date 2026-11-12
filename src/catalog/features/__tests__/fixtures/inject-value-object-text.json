@@ -1,0 +1,75 @@
+{
+  "description": "the text '{\"a\":{\"b\":1}}' stays inert text",
+  "mode": "expand",
+  "library": [
+    {
+      "id": "say",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "h",
+        "type": "Heading",
+        "props": {},
+        "children": "Placeholder"
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "h",
+          "target": "children"
+        }
+      ]
+    }
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "blk",
+        "type": "Feature",
+        "props": {
+          "featureId": "say",
+          "params": {
+            "title": "{\"a\":{\"b\":1}}"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": true,
+    "layout": {
+      "id": "root",
+      "type": "Page",
+      "props": {},
+      "children": [
+        {
+          "id": "blk",
+          "type": "Heading",
+          "name": "say",
+          "props": {},
+          "children": "{\"a\":{\"b\":1}}",
+          "feature": {
+            "id": "say",
+            "version": 1,
+            "params": {
+              "title": "{\"a\":{\"b\":1}}"
+            }
+          }
+        }
+      ]
+    },
+    "used": [
+      "say"
+    ]
+  },
+  "checkPrototype": true
+}

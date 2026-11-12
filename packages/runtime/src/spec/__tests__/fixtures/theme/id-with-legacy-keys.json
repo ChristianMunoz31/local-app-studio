@@ -1,0 +1,18 @@
+{
+  "name": "id-with-legacy-keys",
+  "description": "An id kept in step with preset and radius",
+  "theme": {
+    "preset": "forest",
+    "radius": "md",
+    "id": "forest"
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "forest",
+      "radius": "md",
+      "id": "forest"
+    }
+  }
+}

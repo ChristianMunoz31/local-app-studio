@@ -1,0 +1,378 @@
+{
+ "specVersion": 1,
+ "app": {
+  "name": "Inventory",
+  "slug": "inventory",
+  "identifier": "com.example.inventory",
+  "version": "1.0.0",
+  "description": "For a small shop or workshop that keeps track of stock and what to order next.",
+  "icon": "box"
+ },
+ "tables": [
+  {
+   "id": "products",
+   "label": "Products",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "Name",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "category",
+     "label": "Category",
+     "type": "select",
+     "options": [
+      "Parts",
+      "Tools",
+      "Supplies"
+     ]
+    },
+    {
+     "id": "quantity",
+     "label": "Quantity",
+     "type": "integer",
+     "default": 0
+    },
+    {
+     "id": "reorder_at",
+     "label": "Reorder at",
+     "type": "integer",
+     "default": 5
+    },
+    {
+     "id": "location",
+     "label": "Location",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "id": "deliveries",
+   "label": "Deliveries",
+   "fields": [
+    {
+     "id": "product",
+     "label": "Product",
+     "type": "reference",
+     "table": "products",
+     "required": true
+    },
+    {
+     "id": "amount",
+     "label": "Amount",
+     "type": "integer",
+     "required": true
+    },
+    {
+     "id": "arrives",
+     "label": "Arrives",
+     "type": "date"
+    },
+    {
+     "id": "supplier",
+     "label": "Supplier",
+     "type": "text"
+    }
+   ]
+  }
+ ],
+ "pages": [
+  {
+   "id": "home",
+   "title": "Overview",
+   "route": "/",
+   "sources": [
+    {
+     "id": "low",
+     "table": "products",
+     "where": [
+      {
+       "field": "quantity",
+       "op": "lte",
+       "value": 5
+      }
+     ],
+     "orderBy": [
+      {
+       "field": "quantity",
+       "dir": "asc"
+      }
+     ]
+    },
+    {
+     "id": "products_all",
+     "table": "products"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "co",
+      "type": "Callout",
+      "props": {
+       "tone": "warning",
+       "title": "Low stock"
+      },
+      "children": "These items are at 5 or fewer. Order more soon."
+     },
+     {
+      "id": "s1",
+      "type": "StatCard",
+      "sizing": {
+       "width": "half"
+      },
+      "props": {
+       "source": "products_all",
+       "stat": "sum",
+       "field": "quantity",
+       "label": "Units in stock"
+      },
+      "children": []
+     },
+     {
+      "id": "s2",
+      "type": "StatCard",
+      "sizing": {
+       "width": "half"
+      },
+      "props": {
+       "source": "low",
+       "label": "Items to reorder",
+       "tone": "warning"
+      },
+      "children": []
+     },
+     {
+      "id": "rl",
+      "type": "RecordList",
+      "props": {
+       "source": "low",
+       "titleField": "name",
+       "subtitleField": "location",
+       "badgeField": "category",
+       "rowAction": {
+        "action": "navigate",
+        "pageId": "product",
+        "withRecord": true
+       },
+       "emptyText": "Nothing is low."
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "products",
+   "title": "Products",
+   "route": "/products",
+   "sources": [
+    {
+     "id": "products_all",
+     "table": "products"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "Products"
+      },
+      "children": [
+       {
+        "id": "b1",
+        "type": "Button",
+        "props": {
+         "action": {
+          "action": "open-form",
+          "table": "products",
+          "mode": "create"
+         }
+        },
+        "children": "Add product"
+       }
+      ]
+     },
+     {
+      "id": "fb",
+      "type": "FilterBar",
+      "props": {
+       "source": "products_all",
+       "fields": [
+        "category"
+       ]
+      },
+      "children": []
+     },
+     {
+      "id": "t1",
+      "type": "DataTable",
+      "props": {
+       "source": "products_all",
+       "columns": [
+        "name",
+        "category",
+        "quantity",
+        "reorder_at",
+        "location"
+       ],
+       "rowAction": {
+        "action": "navigate",
+        "pageId": "product",
+        "withRecord": true
+       }
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "product",
+   "title": "Product",
+   "route": "/products/:id",
+   "sources": [
+    {
+     "id": "product",
+     "table": "products",
+     "mode": "record"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "bl",
+      "type": "BackLink",
+      "props": {
+       "action": {
+        "action": "navigate",
+        "pageId": "products",
+        "withRecord": false
+       }
+      },
+      "children": "All products"
+     },
+     {
+      "id": "rd",
+      "type": "RecordDetail",
+      "props": {
+       "source": "product"
+      },
+      "children": []
+     },
+     {
+      "id": "rf",
+      "type": "RecordForm",
+      "props": {
+       "table": "products",
+       "mode": "edit",
+       "source": "product",
+       "fields": [
+        "quantity",
+        "reorder_at"
+       ],
+       "submitLabel": "Update stock"
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "deliveries",
+   "title": "Deliveries",
+   "route": "/deliveries",
+   "sources": [
+    {
+     "id": "deliveries_all",
+     "table": "deliveries",
+     "orderBy": [
+      {
+       "field": "arrives",
+       "dir": "desc"
+      }
+     ]
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "rf",
+      "type": "RecordForm",
+      "props": {
+       "table": "deliveries",
+       "fields": [
+        "product",
+        "amount",
+        "arrives",
+        "supplier"
+       ],
+       "submitLabel": "Add delivery"
+      },
+      "children": []
+     },
+     {
+      "id": "t1",
+      "type": "DataTable",
+      "props": {
+       "source": "deliveries_all",
+       "columns": [
+        "product",
+        "amount",
+        "arrives",
+        "supplier"
+       ]
+      },
+      "children": []
+     }
+    ]
+   }
+  }
+ ],
+ "nav": [
+  {
+   "pageId": "home",
+   "label": "Overview",
+   "icon": "home"
+  },
+  {
+   "pageId": "products",
+   "label": "Products",
+   "icon": "box"
+  },
+  {
+   "pageId": "deliveries",
+   "label": "Deliveries",
+   "icon": "truck"
+  }
+ ],
+ "theme": {
+  "preset": "graphite",
+  "radius": "none",
+  "id": "mono",
+  "overrides": {
+   "mode": "dark"
+  }
+ },
+ "menu": {
+  "position": "top",
+  "style": "icons-and-labels"
+ }
+}

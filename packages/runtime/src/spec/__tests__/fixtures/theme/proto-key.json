@@ -1,0 +1,20 @@
+{
+  "name": "proto-key",
+  "description": "A __proto__ key is an unknown key",
+  "theme": {
+    "id": "slate",
+    "__proto__": {
+      "id": "forest"
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme",
+        "code": "unrecognized_keys"
+      }
+    ]
+  }
+}

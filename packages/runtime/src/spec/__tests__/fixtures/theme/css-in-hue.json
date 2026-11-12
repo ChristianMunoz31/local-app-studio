@@ -1,0 +1,20 @@
+{
+  "name": "css-in-hue",
+  "description": "CSS text in the hue",
+  "theme": {
+    "id": "slate",
+    "overrides": {
+      "accentHue": "1; color: red"
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.overrides.accentHue",
+        "code": "invalid_type"
+      }
+    ]
+  }
+}

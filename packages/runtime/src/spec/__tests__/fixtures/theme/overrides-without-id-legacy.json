@@ -1,0 +1,21 @@
+{
+  "name": "overrides-without-id-legacy",
+  "description": "Overrides next to legacy keys still need an id",
+  "theme": {
+    "preset": "ocean",
+    "radius": "sm",
+    "overrides": {
+      "mode": "dark"
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.overrides",
+        "code": "custom"
+      }
+    ]
+  }
+}

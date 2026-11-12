@@ -1,0 +1,15 @@
+{
+  "name": "not-an-object",
+  "description": "A string where the block should be",
+  "menu": "side",
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "menu",
+        "code": "invalid_type"
+      }
+    ]
+  }
+}

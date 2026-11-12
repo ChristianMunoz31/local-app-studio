@@ -1,0 +1,454 @@
+{
+ "specVersion": 1,
+ "app": {
+  "name": "Membership and Attendance",
+  "slug": "membership-attendance",
+  "identifier": "com.example.membershipattendance",
+  "version": "1.0.0",
+  "description": "For a club, gym or class that keeps its members and who came to each session.",
+  "icon": "heart"
+ },
+ "tables": [
+  {
+   "id": "members",
+   "label": "Members",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "Name",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "tier",
+     "label": "Plan",
+     "type": "select",
+     "options": [
+      "Monthly",
+      "Yearly",
+      "Drop in"
+     ],
+     "default": "Monthly"
+    },
+    {
+     "id": "joined",
+     "label": "Joined",
+     "type": "date"
+    },
+    {
+     "id": "active",
+     "label": "Active",
+     "type": "boolean",
+     "default": true
+    }
+   ]
+  },
+  {
+   "id": "sessions",
+   "label": "Sessions",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "Name",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "held",
+     "label": "Held",
+     "type": "date",
+     "required": true
+    },
+    {
+     "id": "coach",
+     "label": "Coach",
+     "type": "text"
+    },
+    {
+     "id": "spots",
+     "label": "Spots",
+     "type": "integer",
+     "default": 12
+    }
+   ]
+  },
+  {
+   "id": "attendance",
+   "label": "Attendance",
+   "fields": [
+    {
+     "id": "member",
+     "label": "Member",
+     "type": "reference",
+     "table": "members",
+     "required": true
+    },
+    {
+     "id": "session",
+     "label": "Session",
+     "type": "reference",
+     "table": "sessions",
+     "required": true
+    },
+    {
+     "id": "came",
+     "label": "Came",
+     "type": "boolean",
+     "default": true
+    }
+   ]
+  }
+ ],
+ "pages": [
+  {
+   "id": "home",
+   "title": "Overview",
+   "route": "/",
+   "sources": [
+    {
+     "id": "active_members",
+     "table": "members",
+     "where": [
+      {
+       "field": "active",
+       "op": "eq",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": "checkins",
+     "table": "attendance",
+     "where": [
+      {
+       "field": "came",
+       "op": "eq",
+       "value": true
+      }
+     ]
+    },
+    {
+     "id": "sessions_soon",
+     "table": "sessions",
+     "orderBy": [
+      {
+       "field": "held",
+       "dir": "desc"
+      }
+     ],
+     "limit": 6
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "g",
+      "type": "Grid",
+      "props": {
+       "columns": 3
+      },
+      "children": [
+       {
+        "id": "k1",
+        "type": "Card",
+        "props": {
+         "title": "Members"
+        },
+        "children": [
+         {
+          "id": "a1",
+          "type": "StatCard",
+          "props": {
+           "source": "active_members",
+           "label": "Active members",
+           "icon": "users"
+          },
+          "children": []
+         }
+        ]
+       },
+       {
+        "id": "k2",
+        "type": "Card",
+        "props": {
+         "title": "Check-ins"
+        },
+        "children": [
+         {
+          "id": "a2",
+          "type": "StatCard",
+          "props": {
+           "source": "checkins",
+           "label": "Check-ins",
+           "icon": "clipboard"
+          },
+          "children": []
+         }
+        ]
+       },
+       {
+        "id": "k3",
+        "type": "Card",
+        "props": {
+         "title": "Goal"
+        },
+        "children": [
+         {
+          "id": "a3",
+          "type": "ProgressBar",
+          "props": {
+           "source": "checkins",
+           "stat": "count",
+           "target": 40,
+           "label": "Toward 40 check-ins"
+          },
+          "children": []
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "id": "h2",
+      "type": "Heading",
+      "props": {},
+      "children": "Sessions"
+     },
+     {
+      "id": "rl",
+      "type": "RecordList",
+      "props": {
+       "source": "sessions_soon",
+       "titleField": "name",
+       "subtitleField": "held",
+       "rowAction": {
+        "action": "navigate",
+        "pageId": "session",
+        "withRecord": true
+       }
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "sessions",
+   "title": "Sessions",
+   "route": "/sessions",
+   "sources": [
+    {
+     "id": "sessions_all",
+     "table": "sessions",
+     "orderBy": [
+      {
+       "field": "held",
+       "dir": "desc"
+      }
+     ]
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "Sessions"
+      },
+      "children": [
+       {
+        "id": "b1",
+        "type": "Button",
+        "props": {
+         "action": {
+          "action": "open-form",
+          "table": "sessions",
+          "mode": "create"
+         }
+        },
+        "children": "Add session"
+       }
+      ]
+     },
+     {
+      "id": "t1",
+      "type": "DataTable",
+      "props": {
+       "source": "sessions_all",
+       "columns": [
+        "name",
+        "held",
+        "coach",
+        "spots"
+       ],
+       "rowAction": {
+        "action": "navigate",
+        "pageId": "session",
+        "withRecord": true
+       }
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "session",
+   "title": "Session",
+   "route": "/sessions/:id",
+   "sources": [
+    {
+     "id": "session",
+     "table": "sessions",
+     "mode": "record"
+    },
+    {
+     "id": "attendance_all",
+     "table": "attendance"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "bl",
+      "type": "BackLink",
+      "props": {
+       "action": {
+        "action": "navigate",
+        "pageId": "sessions",
+        "withRecord": false
+       }
+      },
+      "children": "All sessions"
+     },
+     {
+      "id": "rd",
+      "type": "RecordDetail",
+      "props": {
+       "source": "session"
+      },
+      "children": []
+     },
+     {
+      "id": "rf",
+      "type": "RecordForm",
+      "props": {
+       "table": "attendance",
+       "fields": [
+        "member",
+        "session",
+        "came"
+       ],
+       "submitLabel": "Check in"
+      },
+      "children": []
+     },
+     {
+      "id": "t1",
+      "type": "DataTable",
+      "props": {
+       "source": "attendance_all",
+       "columns": [
+        "member",
+        "session",
+        "came"
+       ]
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "members",
+   "title": "Members",
+   "route": "/members",
+   "sources": [
+    {
+     "id": "members_all",
+     "table": "members"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "Members"
+      },
+      "children": [
+       {
+        "id": "b1",
+        "type": "Button",
+        "props": {
+         "action": {
+          "action": "open-form",
+          "table": "members",
+          "mode": "create"
+         }
+        },
+        "children": "Add member"
+       }
+      ]
+     },
+     {
+      "id": "t1",
+      "type": "DataTable",
+      "props": {
+       "source": "members_all",
+       "columns": [
+        "name",
+        "tier",
+        "joined",
+        "active"
+       ]
+      },
+      "children": []
+     }
+    ]
+   }
+  }
+ ],
+ "nav": [
+  {
+   "pageId": "home",
+   "label": "Overview",
+   "icon": "home"
+  },
+  {
+   "pageId": "sessions",
+   "label": "Sessions",
+   "icon": "calendar"
+  },
+  {
+   "pageId": "members",
+   "label": "Members",
+   "icon": "users"
+  }
+ ],
+ "theme": {
+  "preset": "sunset",
+  "radius": "lg",
+  "id": "sand"
+ },
+ "menu": {
+  "position": "top",
+  "style": "labels"
+ }
+}

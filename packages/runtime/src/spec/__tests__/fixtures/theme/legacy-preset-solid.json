@@ -1,0 +1,16 @@
+{
+  "name": "legacy-preset-solid",
+  "description": "Legacy background solid",
+  "theme": {
+    "preset": "solid",
+    "radius": "lg"
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "solid",
+      "radius": "lg"
+    }
+  }
+}

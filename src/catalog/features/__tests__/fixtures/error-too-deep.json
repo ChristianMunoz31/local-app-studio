@@ -1,0 +1,158 @@
+{
+  "description": "four levels gives feature_too_deep",
+  "mode": "expand",
+  "library": [
+    {
+      "id": "l1",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "h",
+        "type": "Heading",
+        "props": {},
+        "children": "Placeholder"
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "h",
+          "target": "children"
+        }
+      ]
+    },
+    {
+      "id": "l2",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "w",
+        "type": "Section",
+        "props": {},
+        "children": [
+          {
+            "id": "n",
+            "type": "Feature",
+            "props": {
+              "featureId": "l1",
+              "params": {
+                "title": "x"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "n",
+          "target": "props.params.title"
+        }
+      ]
+    },
+    {
+      "id": "l3",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "w",
+        "type": "Section",
+        "props": {},
+        "children": [
+          {
+            "id": "n",
+            "type": "Feature",
+            "props": {
+              "featureId": "l2",
+              "params": {
+                "title": "x"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "n",
+          "target": "props.params.title"
+        }
+      ]
+    },
+    {
+      "id": "l4",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "w",
+        "type": "Section",
+        "props": {},
+        "children": [
+          {
+            "id": "n",
+            "type": "Feature",
+            "props": {
+              "featureId": "l3",
+              "params": {
+                "title": "x"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "n",
+          "target": "props.params.title"
+        }
+      ]
+    }
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "b",
+        "type": "Feature",
+        "props": {
+          "featureId": "l4",
+          "params": {
+            "title": "T"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "feature_too_deep"
+    ]
+  }
+}

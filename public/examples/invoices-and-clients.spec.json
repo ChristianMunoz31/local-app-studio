@@ -1,0 +1,386 @@
+{
+ "specVersion": 1,
+ "app": {
+  "name": "Invoices and Clients",
+  "slug": "invoices-and-clients",
+  "identifier": "com.example.invoicesandclients",
+  "version": "1.0.0",
+  "description": "For a freelancer or small shop that sends invoices and wants to see what is paid and what is still owed.",
+  "icon": "file"
+ },
+ "tables": [
+  {
+   "id": "clients",
+   "label": "Clients",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "Name",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "contact",
+     "label": "Contact",
+     "type": "text"
+    },
+    {
+     "id": "city",
+     "label": "City",
+     "type": "text"
+    }
+   ]
+  },
+  {
+   "id": "invoices",
+   "label": "Invoices",
+   "titleField": "number",
+   "fields": [
+    {
+     "id": "number",
+     "label": "Number",
+     "type": "text",
+     "required": true,
+     "autoNumber": {
+      "prefix": "INV-",
+      "start": 1001,
+      "width": 4
+     }
+    },
+    {
+     "id": "client",
+     "label": "Client",
+     "type": "reference",
+     "table": "clients"
+    },
+    {
+     "id": "issued",
+     "label": "Issued",
+     "type": "date"
+    },
+    {
+     "id": "due",
+     "label": "Due",
+     "type": "date"
+    },
+    {
+     "id": "amount",
+     "label": "Amount",
+     "type": "real",
+     "required": true
+    },
+    {
+     "id": "paid",
+     "label": "Paid",
+     "type": "boolean",
+     "default": false
+    },
+    {
+     "id": "paid_on",
+     "label": "Paid on",
+     "type": "date"
+    }
+   ],
+   "rules": [
+    {
+     "when": {
+      "field": "paid",
+      "is": true
+     },
+     "then": [
+      {
+       "set": "paid_on",
+       "to": "today"
+      }
+     ]
+    },
+    {
+     "when": {
+      "field": "paid",
+      "is": false
+     },
+     "then": [
+      {
+       "set": "paid_on",
+       "to": "clear"
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "pages": [
+  {
+   "id": "home",
+   "title": "Invoices",
+   "route": "/",
+   "sources": [
+    {
+     "id": "unpaid",
+     "table": "invoices",
+     "where": [
+      {
+       "field": "paid",
+       "op": "eq",
+       "value": false
+      }
+     ],
+     "orderBy": [
+      {
+       "field": "due",
+       "dir": "asc"
+      }
+     ]
+    },
+    {
+     "id": "all_invoices",
+     "table": "invoices"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "Invoices"
+      },
+      "children": [
+       {
+        "id": "b1",
+        "type": "Button",
+        "props": {
+         "action": {
+          "action": "open-form",
+          "table": "invoices",
+          "mode": "create"
+         }
+        },
+        "children": "New invoice"
+       }
+      ]
+     },
+     {
+      "id": "s1",
+      "type": "StatCard",
+      "sizing": {
+       "width": "third"
+      },
+      "props": {
+       "source": "unpaid",
+       "label": "Unpaid",
+       "tone": "warning"
+      },
+      "children": []
+     },
+     {
+      "id": "s2",
+      "type": "StatCard",
+      "sizing": {
+       "width": "third"
+      },
+      "props": {
+       "source": "unpaid",
+       "stat": "sum",
+       "field": "amount",
+       "label": "Still owed",
+       "tone": "danger"
+      },
+      "children": []
+     },
+     {
+      "id": "s3",
+      "type": "StatCard",
+      "sizing": {
+       "width": "third"
+      },
+      "props": {
+       "source": "all_invoices",
+       "stat": "sum",
+       "field": "amount",
+       "label": "Billed in all",
+       "tone": "success"
+      },
+      "children": []
+     },
+     {
+      "id": "ch",
+      "type": "Chart",
+      "props": {
+       "source": "all_invoices",
+       "groupBy": "issued",
+       "measure": "sum",
+       "field": "amount",
+       "title": "Billed by month"
+      },
+      "children": []
+     },
+     {
+      "id": "t1",
+      "type": "DataTable",
+      "props": {
+       "source": "unpaid",
+       "columns": [
+        "number",
+        "client",
+        "due",
+        "amount"
+       ],
+       "rowAction": {
+        "action": "navigate",
+        "pageId": "invoice",
+        "withRecord": true
+       }
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "clients",
+   "title": "Clients",
+   "route": "/clients",
+   "sources": [
+    {
+     "id": "clients_all",
+     "table": "clients",
+     "orderBy": [
+      {
+       "field": "name",
+       "dir": "asc"
+      }
+     ]
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "Clients"
+      },
+      "children": [
+       {
+        "id": "b1",
+        "type": "Button",
+        "props": {
+         "action": {
+          "action": "open-form",
+          "table": "clients",
+          "mode": "create"
+         }
+        },
+        "children": "Add client"
+       }
+      ]
+     },
+     {
+      "id": "t1",
+      "type": "DataTable",
+      "props": {
+       "source": "clients_all",
+       "columns": [
+        "name",
+        "contact",
+        "city"
+       ]
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "invoice",
+   "title": "Invoice",
+   "route": "/invoices/:id",
+   "sources": [
+    {
+     "id": "invoice",
+     "table": "invoices",
+     "mode": "record"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "bc",
+      "type": "Breadcrumb",
+      "props": {
+       "page": "home",
+       "source": "invoice"
+      },
+      "children": []
+     },
+     {
+      "id": "rd",
+      "type": "RecordDetail",
+      "props": {
+       "source": "invoice"
+      },
+      "children": []
+     },
+     {
+      "id": "rf",
+      "type": "RecordForm",
+      "props": {
+       "table": "invoices",
+       "mode": "edit",
+       "source": "invoice",
+       "fields": [
+        "paid",
+        "paid_on",
+        "due"
+       ],
+       "submitLabel": "Save"
+      },
+      "children": []
+     }
+    ]
+   }
+  }
+ ],
+ "nav": [
+  {
+   "pageId": "home",
+   "label": "Invoices",
+   "icon": "file"
+  },
+  {
+   "pageId": "clients",
+   "label": "Clients",
+   "icon": "users"
+  }
+ ],
+ "theme": {
+  "preset": "aurora",
+  "radius": "md",
+  "id": "slate"
+ },
+ "menu": {
+  "position": "top",
+  "style": "labels",
+  "end": [
+   {
+    "id": "sb",
+    "type": "SearchBox",
+    "props": {
+     "placeholder": "Search this page"
+    },
+    "children": []
+   }
+  ]
+ }
+}

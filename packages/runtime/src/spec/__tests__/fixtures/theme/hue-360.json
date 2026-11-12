@@ -1,0 +1,20 @@
+{
+  "name": "hue-360",
+  "description": "Hue above 359",
+  "theme": {
+    "id": "slate",
+    "overrides": {
+      "accentHue": 360
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.overrides.accentHue",
+        "code": "too_big"
+      }
+    ]
+  }
+}

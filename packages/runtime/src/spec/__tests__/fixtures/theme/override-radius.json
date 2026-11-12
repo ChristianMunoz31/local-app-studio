@@ -1,0 +1,22 @@
+{
+  "name": "override-radius",
+  "description": "Corner override",
+  "theme": {
+    "id": "ocean",
+    "overrides": {
+      "radius": "none"
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "aurora",
+      "radius": "md",
+      "id": "ocean",
+      "overrides": {
+        "radius": "none"
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "hue-minus-one",
+  "description": "Hue below 0",
+  "theme": {
+    "id": "slate",
+    "overrides": {
+      "accentHue": -1
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.overrides.accentHue",
+        "code": "too_small"
+      }
+    ]
+  }
+}

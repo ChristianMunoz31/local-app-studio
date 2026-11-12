@@ -1,0 +1,16 @@
+{
+  "name": "legacy-preset-sunset",
+  "description": "Legacy background sunset",
+  "theme": {
+    "preset": "sunset",
+    "radius": "lg"
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "sunset",
+      "radius": "lg"
+    }
+  }
+}

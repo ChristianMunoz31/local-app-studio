@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2023"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+    "strict": true,
+    "allowJs": true,
+    "checkJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "paths": {
+      "@/*": ["./src/*"],
+      "@local-app-studio/runtime/server/*": ["./packages/runtime/server/*"],
+      "@local-app-studio/runtime/*": ["./packages/runtime/src/*"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx", "pro/src/**/*.ts", "pro/src/**/*.tsx", "packages/runtime/src/**/*.ts", "packages/runtime/src/**/*.tsx"]
+}

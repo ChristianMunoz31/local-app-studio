@@ -1,0 +1,17 @@
+{
+  "name": "unknown-style",
+  "description": "A style that is not labels or icons-and-labels, here a CSS-like string",
+  "menu": {
+    "style": "color: red"
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "menu.style",
+        "code": "invalid_value"
+      }
+    ]
+  }
+}

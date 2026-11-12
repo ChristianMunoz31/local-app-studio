@@ -1,0 +1,13 @@
+{
+  "name": "empty-block",
+  "description": "An empty block fills both defaults",
+  "menu": {},
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "menu": {
+      "position": "top",
+      "style": "icons-and-labels"
+    }
+  }
+}

@@ -1,0 +1,336 @@
+{
+ "specVersion": 1,
+ "app": {
+  "name": "Appointments",
+  "slug": "appointments",
+  "identifier": "com.example.appointments",
+  "version": "1.0.0",
+  "description": "For a salon, studio or tutor who books clients and wants to see what is on today and next.",
+  "icon": "calendar"
+ },
+ "tables": [
+  {
+   "id": "clients",
+   "label": "Clients",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "Name",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "preferred",
+     "label": "Preferred",
+     "type": "select",
+     "options": [
+      "Morning",
+      "Afternoon",
+      "Evening"
+     ]
+    },
+    {
+     "id": "first_visit",
+     "label": "First visit",
+     "type": "date"
+    }
+   ]
+  },
+  {
+   "id": "appointments",
+   "label": "Appointments",
+   "titleField": "name",
+   "fields": [
+    {
+     "id": "name",
+     "label": "Service",
+     "type": "text",
+     "required": true
+    },
+    {
+     "id": "client",
+     "label": "Client",
+     "type": "reference",
+     "table": "clients"
+    },
+    {
+     "id": "starts",
+     "label": "Starts",
+     "type": "datetime",
+     "required": true
+    },
+    {
+     "id": "minutes",
+     "label": "Minutes",
+     "type": "integer",
+     "default": 60
+    },
+    {
+     "id": "status",
+     "label": "Status",
+     "type": "select",
+     "options": [
+      "Booked",
+      "Done",
+      "Cancelled"
+     ],
+     "default": "Booked"
+    }
+   ]
+  }
+ ],
+ "pages": [
+  {
+   "id": "home",
+   "title": "Coming up",
+   "route": "/",
+   "sources": [
+    {
+     "id": "booked",
+     "table": "appointments",
+     "where": [
+      {
+       "field": "status",
+       "op": "eq",
+       "value": "Booked"
+      }
+     ],
+     "orderBy": [
+      {
+       "field": "starts",
+       "dir": "asc"
+      }
+     ],
+     "limit": 20
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "Coming up"
+      },
+      "children": [
+       {
+        "id": "b1",
+        "type": "Button",
+        "props": {
+         "action": {
+          "action": "open-form",
+          "table": "appointments",
+          "mode": "create"
+         }
+        },
+        "children": "Book"
+       }
+      ]
+     },
+     {
+      "id": "tl",
+      "type": "Timeline",
+      "props": {
+       "source": "booked",
+       "dateField": "starts",
+       "titleField": "name",
+       "order": "oldest",
+       "emptyText": "No bookings yet."
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "bookings",
+   "title": "All bookings",
+   "route": "/bookings",
+   "sources": [
+    {
+     "id": "all_bookings",
+     "table": "appointments",
+     "orderBy": [
+      {
+       "field": "starts",
+       "dir": "desc"
+      }
+     ]
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "fb",
+      "type": "FilterBar",
+      "props": {
+       "source": "all_bookings",
+       "fields": [
+        "status",
+        "client"
+       ]
+      },
+      "children": []
+     },
+     {
+      "id": "t1",
+      "type": "DataTable",
+      "props": {
+       "source": "all_bookings",
+       "columns": [
+        "name",
+        "client",
+        "starts",
+        "minutes",
+        "status"
+       ]
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "clients",
+   "title": "Clients",
+   "route": "/clients",
+   "sources": [
+    {
+     "id": "clients_all",
+     "table": "clients",
+     "orderBy": [
+      {
+       "field": "name",
+       "dir": "asc"
+      }
+     ]
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "h1",
+      "type": "PageHeader",
+      "props": {
+       "title": "Clients"
+      },
+      "children": [
+       {
+        "id": "b1",
+        "type": "Button",
+        "props": {
+         "action": {
+          "action": "open-form",
+          "table": "clients",
+          "mode": "create"
+         }
+        },
+        "children": "Add client"
+       }
+      ]
+     },
+     {
+      "id": "rl",
+      "type": "RecordList",
+      "props": {
+       "source": "clients_all",
+       "titleField": "name",
+       "subtitleField": "preferred",
+       "rowAction": {
+        "action": "navigate",
+        "pageId": "client",
+        "withRecord": true
+       }
+      },
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "id": "client",
+   "title": "Client",
+   "route": "/clients/:id",
+   "sources": [
+    {
+     "id": "client",
+     "table": "clients",
+     "mode": "record"
+    }
+   ],
+   "layout": {
+    "id": "r",
+    "type": "Page",
+    "props": {},
+    "children": [
+     {
+      "id": "bc",
+      "type": "Breadcrumb",
+      "props": {
+       "page": "clients",
+       "source": "client"
+      },
+      "children": []
+     },
+     {
+      "id": "rd",
+      "type": "RecordDetail",
+      "props": {
+       "source": "client"
+      },
+      "children": []
+     },
+     {
+      "id": "rf",
+      "type": "RecordForm",
+      "props": {
+       "table": "clients",
+       "mode": "edit",
+       "source": "client",
+       "fields": [
+        "preferred"
+       ]
+      },
+      "children": []
+     }
+    ]
+   }
+  }
+ ],
+ "nav": [
+  {
+   "pageId": "home",
+   "label": "Coming up",
+   "icon": "calendar"
+  },
+  {
+   "pageId": "bookings",
+   "label": "All bookings",
+   "icon": "list"
+  },
+  {
+   "pageId": "clients",
+   "label": "Clients",
+   "icon": "users"
+  }
+ ],
+ "theme": {
+  "preset": "sunset",
+  "radius": "lg",
+  "id": "rose"
+ },
+ "menu": {
+  "position": "side",
+  "style": "icons-and-labels"
+ }
+}

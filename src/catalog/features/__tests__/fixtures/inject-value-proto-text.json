@@ -1,0 +1,75 @@
+{
+  "description": "the text '__proto__' stays inert text",
+  "mode": "expand",
+  "library": [
+    {
+      "id": "say",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "h",
+        "type": "Heading",
+        "props": {},
+        "children": "Placeholder"
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "h",
+          "target": "children"
+        }
+      ]
+    }
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "blk",
+        "type": "Feature",
+        "props": {
+          "featureId": "say",
+          "params": {
+            "title": "__proto__"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": true,
+    "layout": {
+      "id": "root",
+      "type": "Page",
+      "props": {},
+      "children": [
+        {
+          "id": "blk",
+          "type": "Heading",
+          "name": "say",
+          "props": {},
+          "children": "__proto__",
+          "feature": {
+            "id": "say",
+            "version": 1,
+            "params": {
+              "title": "__proto__"
+            }
+          }
+        }
+      ]
+    },
+    "used": [
+      "say"
+    ]
+  },
+  "checkPrototype": true
+}

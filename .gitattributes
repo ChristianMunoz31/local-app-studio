@@ -1,0 +1,39 @@
+* text=auto eol=lf
+*.ps1 text eol=crlf
+.githooks/* text eol=lf
+*.sh text eol=lf
+
+# Kit packaging (npm run package:kit uses `git archive`): paths that must never ship in the packaged ZIP.
+# scripts/package-kit.mjs applies the same list again as an exclusion predicate (defense in depth).
+.personal-denylist export-ignore
+.env export-ignore
+.env.* export-ignore
+.env.example -export-ignore
+.claude/settings.local.json export-ignore
+*.local export-ignore
+*.pem export-ignore
+*.key export-ignore
+*.p12 export-ignore
+*.pfx export-ignore
+*.db export-ignore
+*.db-wal export-ignore
+*.db-shm export-ignore
+*.bak export-ignore
+*.sqlite export-ignore
+*.sqlite3 export-ignore
+*.csv export-ignore
+*.tsv export-ignore
+*.xlsx export-ignore
+.npmrc export-ignore
+CLAUDE.local.md export-ignore
+*.log export-ignore
+license-*.json export-ignore
+/data export-ignore
+/logs export-ignore
+/dist-* export-ignore
+/.sidecar-build export-ignore
+/.dev-build export-ignore
+/src-tauri/target export-ignore
+/src-tauri/binaries export-ignore
+/src-tauri/gen export-ignore
+/src-tauri/resources export-ignore

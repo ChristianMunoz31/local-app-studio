@@ -1,0 +1,20 @@
+{
+  "name": "mode-system",
+  "description": "System is not a spec mode",
+  "theme": {
+    "id": "slate",
+    "overrides": {
+      "mode": "system"
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.overrides.mode",
+        "code": "invalid_value"
+      }
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "@local-app-studio/runtime",
+  "version": "1.1.1",
+  "private": true,
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ChristianMunoz31/local-app-studio.git",
+    "directory": "packages/runtime"
+  },
+  "bugs": {
+    "url": "https://github.com/ChristianMunoz31/local-app-studio/issues"
+  },
+  "homepage": "https://github.com/ChristianMunoz31/local-app-studio/tree/main/packages/runtime#readme",
+  "type": "module",
+  "description": "The runtime slice of Local App Studio: the app spec, the theme engine, the part catalog components and the runtime server routes.",
+  "exports": {
+    "./server/*": "./server/*",
+    "./*": "./src/*"
+  }
+}

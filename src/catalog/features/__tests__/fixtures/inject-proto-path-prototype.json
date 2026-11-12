@@ -1,0 +1,58 @@
+{
+  "description": "a binding path through prototype",
+  "mode": "expand",
+  "library": [
+    {
+      "id": "evil",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "s",
+        "type": "Section",
+        "props": {
+          "title": "T"
+        },
+        "children": []
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "s",
+          "target": "props.prototype.title"
+        }
+      ]
+    }
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "x",
+        "type": "Feature",
+        "props": {
+          "featureId": "evil",
+          "params": {
+            "title": "polluted"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "invalid_binding"
+    ]
+  },
+  "mustNotContain": [
+    "polluted"
+  ]
+}

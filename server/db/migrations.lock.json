@@ -1,0 +1,6 @@
+{
+  "001_init.sql": "eed6e4e13f09e75dbc3f34dc34af50a3f579d5ed263b543291cb3499f3d6c9ec",
+  "002_items.sql": "feb52f4ed1ac7b34538ee2416802dfcba60b6e715b9978145d15d754267bbe39",
+  "003_studio.sql": "6ca8e2ab9f6bbfd4529834e31dbeb30f799631ce44bb30df2ef74127e976c6fa",
+  "004_features.sql": "69d7e4233da74a75f2c69b7df017f10e166bf93b0af345df918ca0881417a3a6"
+}

@@ -1,0 +1,103 @@
+{
+  "description": "ids already on the page are skipped when numbering",
+  "mode": "expand",
+  "library": [
+    "kpi_row"
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "kpi",
+        "type": "Feature",
+        "props": {
+          "featureId": "kpi_row",
+          "params": {
+            "source": "open_crews",
+            "amount": "size",
+            "title": "Crew size"
+          }
+        },
+        "children": []
+      },
+      {
+        "id": "kpi-1",
+        "type": "Section",
+        "props": {},
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": true,
+    "layout": {
+      "id": "root",
+      "type": "Page",
+      "props": {},
+      "children": [
+        {
+          "id": "kpi",
+          "type": "Section",
+          "name": "Number row",
+          "props": {
+            "title": "Crew size"
+          },
+          "feature": {
+            "id": "kpi_row",
+            "version": 1,
+            "params": {
+              "amount": "size",
+              "source": "open_crews",
+              "title": "Crew size"
+            }
+          },
+          "children": [
+            {
+              "id": "kpi-2",
+              "type": "StatCard",
+              "props": {
+                "source": "open_crews",
+                "stat": "count",
+                "label": "Records"
+              },
+              "children": []
+            },
+            {
+              "id": "kpi-3",
+              "type": "StatCard",
+              "props": {
+                "source": "open_crews",
+                "stat": "sum",
+                "field": "size",
+                "label": "Total"
+              },
+              "children": []
+            },
+            {
+              "id": "kpi-4",
+              "type": "StatCard",
+              "props": {
+                "source": "open_crews",
+                "stat": "avg",
+                "field": "size",
+                "label": "Average"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "kpi-1",
+          "type": "Section",
+          "props": {},
+          "children": []
+        }
+      ]
+    },
+    "used": [
+      "kpi_row"
+    ]
+  }
+}

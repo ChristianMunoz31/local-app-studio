@@ -1,0 +1,20 @@
+{
+  "name": "hue-string",
+  "description": "Hue as text",
+  "theme": {
+    "id": "slate",
+    "overrides": {
+      "accentHue": "12"
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.overrides.accentHue",
+        "code": "invalid_type"
+      }
+    ]
+  }
+}

@@ -1,0 +1,125 @@
+{
+  "description": "a feature that places another feature",
+  "mode": "expand",
+  "library": [
+    {
+      "id": "say",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "h",
+        "type": "Heading",
+        "props": {},
+        "children": "Placeholder"
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "h",
+          "target": "children"
+        }
+      ]
+    },
+    {
+      "id": "wrap",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "w",
+        "type": "Section",
+        "props": {},
+        "children": [
+          {
+            "id": "n",
+            "type": "Feature",
+            "props": {
+              "featureId": "say",
+              "params": {
+                "title": "x"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "n",
+          "target": "props.params.title"
+        }
+      ]
+    }
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "blk",
+        "type": "Feature",
+        "props": {
+          "featureId": "wrap",
+          "params": {
+            "title": "Hello"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": true,
+    "layout": {
+      "id": "root",
+      "type": "Page",
+      "props": {},
+      "children": [
+        {
+          "id": "blk",
+          "type": "Section",
+          "name": "wrap",
+          "props": {},
+          "feature": {
+            "id": "wrap",
+            "version": 1,
+            "params": {
+              "title": "Hello"
+            }
+          },
+          "children": [
+            {
+              "id": "blk-1",
+              "type": "Heading",
+              "name": "say",
+              "props": {},
+              "children": "Hello",
+              "feature": {
+                "id": "say",
+                "version": 1,
+                "params": {
+                  "title": "Hello"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "used": [
+      "wrap",
+      "say"
+    ]
+  }
+}

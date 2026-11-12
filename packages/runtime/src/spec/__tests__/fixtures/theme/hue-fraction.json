@@ -1,0 +1,20 @@
+{
+  "name": "hue-fraction",
+  "description": "Hue that is not a whole number",
+  "theme": {
+    "id": "slate",
+    "overrides": {
+      "accentHue": 12.5
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.overrides.accentHue",
+        "code": "invalid_type"
+      }
+    ]
+  }
+}

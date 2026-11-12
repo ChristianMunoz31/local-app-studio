@@ -1,0 +1,26 @@
+{
+  "name": "override-all",
+  "description": "All three overrides",
+  "theme": {
+    "id": "midnight",
+    "overrides": {
+      "accentHue": 359,
+      "radius": "lg",
+      "mode": "light"
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "aurora",
+      "radius": "md",
+      "id": "midnight",
+      "overrides": {
+        "accentHue": 359,
+        "radius": "lg",
+        "mode": "light"
+      }
+    }
+  }
+}

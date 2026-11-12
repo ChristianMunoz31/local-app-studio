@@ -1,0 +1,20 @@
+{
+  "name": "proto-key",
+  "description": "A __proto__ key is an unknown key",
+  "menu": {
+    "position": "side",
+    "__proto__": {
+      "position": "top"
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "menu",
+        "code": "unrecognized_keys"
+      }
+    ]
+  }
+}

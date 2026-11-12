@@ -1,0 +1,10 @@
+{
+  "name": "absent",
+  "description": "No menu block: the classic look, no key in the result",
+  "menu": null,
+  "absent": true,
+  "expected": {
+    "ok": true,
+    "menu": null
+  }
+}

@@ -1,0 +1,210 @@
+# las-workflow-set: public
+name: CI
+
+# The CI of the public repository. It needs no secret and no token beyond the read-only GITHUB_TOKEN.
+#
+# verify (Ubuntu, push and pull request): secret scan, hygiene checks, workflow check, lint, typecheck, the whole
+#   unit suite, build and the public build check. The unit suite runs all three Vitest projects (frontend, pure and
+#   backend) on Ubuntu: the private project's own CI runs the same `vitest run` on ubuntu-24.04 on every push, so
+#   nothing in the suite is Windows only.
+# unit-windows (Windows, push and pull request): the same unit suite. Windows is the only platform the product is
+#   tested on, and public repositories get free Actions minutes. The owner can turn this job into a manual one by
+#   changing its `if` to `github.event_name == 'workflow_dispatch'`.
+# e2e (Ubuntu, manual only): Playwright flows, first-run and a11y. Start it from the Actions tab with e2e ticked.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      e2e:
+        description: Also run the Playwright end to end tests
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+# A newer push to the same ref cancels the older run.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned release plus its published sha256. Bump both together. The binary is used instead of gitleaks-action,
+  # so no licence key and no secret is ever needed. Verified in the gitleaks step.
+  GITLEAKS_VERSION: 8.30.1
+  GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+
+jobs:
+  verify:
+    name: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+
+      # On a pull request the scan policy comes from the BASE branch, so a pull request cannot weaken
+      # .gitleaks.toml, .gitleaksignore or the personal-data allowlist and then pass its own checks.
+      # If the base lacks one of them (first introduction), the head copy is used; a missing base
+      # .gitleaksignore means an empty one. A pull request that adds an inline allow comment fails.
+      - name: "hygiene: trusted config"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          GITLEAKS_CONFIG=".gitleaks.toml"
+          ALLOW_FILE="scripts/checks/personal-data.allow.json"
+          GITLEAKS_IGNORE=".gitleaksignore"
+          if [ "$EVENT_NAME" = "pull_request" ]; then
+            if ! git rev-parse --verify "origin/${BASE_REF}^{commit}" >/dev/null 2>&1; then
+              echo "::error title=Base ref missing::origin/${BASE_REF} is not a commit in this checkout, so the scan policy cannot be read from the base branch."
+              exit 1
+            fi
+            if ! changed="$(git diff --name-only "origin/${BASE_REF}...HEAD" -- "$GITLEAKS_CONFIG" "$ALLOW_FILE")"; then
+              echo "::error title=Diff failed::git diff against origin/${BASE_REF} failed."
+              exit 1
+            fi
+            changed="$(printf '%s' "$changed" | tr '\n' ' ')"
+            if [ -n "$changed" ]; then
+              echo "::warning title=Scan policy changed::This pull request changes ${changed}. Checks run with the base branch copy; review the change by hand."
+            fi
+            if git cat-file -e "origin/${BASE_REF}:${GITLEAKS_CONFIG}" 2>/dev/null; then
+              git show "origin/${BASE_REF}:${GITLEAKS_CONFIG}" > "$RUNNER_TEMP/gitleaks.base.toml"
+              GITLEAKS_CONFIG="$RUNNER_TEMP/gitleaks.base.toml"
+            fi
+            if git cat-file -e "origin/${BASE_REF}:${ALLOW_FILE}" 2>/dev/null; then
+              git show "origin/${BASE_REF}:${ALLOW_FILE}" > "$RUNNER_TEMP/personal-data.allow.base.json"
+              cp "$RUNNER_TEMP/personal-data.allow.base.json" "$ALLOW_FILE"
+            fi
+            GITLEAKS_IGNORE="$RUNNER_TEMP/gitleaksignore.base"
+            if git cat-file -e "origin/${BASE_REF}:.gitleaksignore" 2>/dev/null; then
+              git show "origin/${BASE_REF}:.gitleaksignore" > "$GITLEAKS_IGNORE"
+              cp "$GITLEAKS_IGNORE" .gitleaksignore
+            else
+              : > "$GITLEAKS_IGNORE"
+              rm -f .gitleaksignore
+            fi
+            marker="gitleaks:""allow"
+            if ! git diff --no-color --text -U0 "origin/${BASE_REF}...HEAD" > "$RUNNER_TEMP/pr.diff"; then
+              echo "::error title=Diff failed::git diff against origin/${BASE_REF} failed."
+              exit 1
+            fi
+            added="$(grep -E '^\+' "$RUNNER_TEMP/pr.diff" | grep -vE '^\+\+\+ ' | grep -cF -e "$marker" || true)"
+            if [ "$added" != "0" ]; then
+              echo "::error title=Inline gitleaks allow::This pull request adds $added line(s) with an inline gitleaks allow comment. Remove them; a human must review any scan exception."
+              exit 1
+            fi
+          fi
+          echo "GITLEAKS_CONFIG=$GITLEAKS_CONFIG" >> "$GITHUB_ENV"
+          echo "GITLEAKS_IGNORE=$GITLEAKS_IGNORE" >> "$GITHUB_ENV"
+
+      - name: "hygiene: gitleaks"
+        run: |
+          set -euo pipefail
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl -fsSL -o "$RUNNER_TEMP/$archive" \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/${archive}"
+          echo "${GITLEAKS_SHA256}  $RUNNER_TEMP/$archive" | sha256sum --check --strict
+          tar -xzf "$RUNNER_TEMP/$archive" -C "$RUNNER_TEMP" gitleaks
+          "$RUNNER_TEMP/gitleaks" dir . --redact --no-banner --exit-code 1 --config "$GITLEAKS_CONFIG" --gitleaks-ignore-path "$GITLEAKS_IGNORE"
+          "$RUNNER_TEMP/gitleaks" git --redact --no-banner --exit-code 1 --config "$GITLEAKS_CONFIG" --gitleaks-ignore-path "$GITLEAKS_IGNORE"
+
+      - name: "hygiene: em dash"
+        run: npm run check:em-dash
+
+      - name: "hygiene: keys"
+        run: npm run check:keys
+
+      - name: "hygiene: personal data"
+        run: npm run check:personal
+
+      - name: workflows
+        run: npm run check:workflows
+
+      - name: npm ci
+        run: npm ci
+
+      - name: lint
+        run: npm run lint
+
+      - name: typecheck
+        run: node scripts/ci/typecheck.js
+
+      # The Vitest pool and worker count come from vitest.config.js only: no pool flag belongs on a command line here.
+      - name: unit tests
+        run: npx vitest run
+
+      - name: build
+        run: npm run build
+
+      # The public build (vite build and both sidecar bundles) must carry no pro code. It writes over dist/.
+      - name: public build
+        run: npm run check:public
+
+  unit-windows:
+    name: unit tests (windows)
+    runs-on: windows-2025
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: npm ci
+        run: npm ci
+      - name: unit tests
+        run: npx vitest run
+
+  # Manual only: needs the e2e box ticked when the workflow is started from the Actions tab.
+  # The image already holds the Playwright browsers, so the browser download is off.
+  e2e:
+    name: e2e
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.e2e }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+      options: --ipc=host --init
+    # Container jobs default to sh, which has no `set -o pipefail`: the scripts below need bash.
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: tools
+        run: |
+          set -euo pipefail
+          if ! command -v git >/dev/null 2>&1 || ! command -v curl >/dev/null 2>&1; then
+            apt-get update
+            apt-get install -y --no-install-recommends git curl ca-certificates
+          fi
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # The checkout is owned by another user than the container's, so git refuses it ("dubious ownership").
+      - name: git safe directory
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24
+          cache: npm
+      - name: npm ci
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: npm ci
+      - name: build
+        run: npm run build
+      - name: e2e (Playwright)
+        run: node scripts/ci/runE2e.js --project=flows --project=first-run --project=a11y

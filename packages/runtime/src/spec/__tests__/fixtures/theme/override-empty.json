@@ -1,0 +1,18 @@
+{
+  "name": "override-empty",
+  "description": "An empty overrides block is allowed with an id",
+  "theme": {
+    "id": "rose",
+    "overrides": {}
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "aurora",
+      "radius": "md",
+      "id": "rose",
+      "overrides": {}
+    }
+  }
+}

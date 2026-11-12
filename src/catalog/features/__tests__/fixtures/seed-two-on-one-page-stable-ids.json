@@ -1,0 +1,167 @@
+{
+  "description": "two features on one page keep distinct, stable ids",
+  "mode": "expand",
+  "library": [
+    "kpi_row"
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "k1",
+        "type": "Feature",
+        "props": {
+          "featureId": "kpi_row",
+          "params": {
+            "source": "open_crews",
+            "amount": "size",
+            "title": "Crew size"
+          }
+        },
+        "children": []
+      },
+      {
+        "id": "keep",
+        "type": "Section",
+        "props": {},
+        "children": []
+      },
+      {
+        "id": "k2",
+        "type": "Feature",
+        "props": {
+          "featureId": "kpi_row",
+          "params": {
+            "source": "open_crews",
+            "amount": "size",
+            "title": "Second"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": true,
+    "layout": {
+      "id": "root",
+      "type": "Page",
+      "props": {},
+      "children": [
+        {
+          "id": "k1",
+          "type": "Section",
+          "name": "Number row",
+          "props": {
+            "title": "Crew size"
+          },
+          "feature": {
+            "id": "kpi_row",
+            "version": 1,
+            "params": {
+              "amount": "size",
+              "source": "open_crews",
+              "title": "Crew size"
+            }
+          },
+          "children": [
+            {
+              "id": "k1-1",
+              "type": "StatCard",
+              "props": {
+                "source": "open_crews",
+                "stat": "count",
+                "label": "Records"
+              },
+              "children": []
+            },
+            {
+              "id": "k1-2",
+              "type": "StatCard",
+              "props": {
+                "source": "open_crews",
+                "stat": "sum",
+                "field": "size",
+                "label": "Total"
+              },
+              "children": []
+            },
+            {
+              "id": "k1-3",
+              "type": "StatCard",
+              "props": {
+                "source": "open_crews",
+                "stat": "avg",
+                "field": "size",
+                "label": "Average"
+              },
+              "children": []
+            }
+          ]
+        },
+        {
+          "id": "keep",
+          "type": "Section",
+          "props": {},
+          "children": []
+        },
+        {
+          "id": "k2",
+          "type": "Section",
+          "name": "Number row",
+          "props": {
+            "title": "Second"
+          },
+          "feature": {
+            "id": "kpi_row",
+            "version": 1,
+            "params": {
+              "amount": "size",
+              "source": "open_crews",
+              "title": "Second"
+            }
+          },
+          "children": [
+            {
+              "id": "k2-1",
+              "type": "StatCard",
+              "props": {
+                "source": "open_crews",
+                "stat": "count",
+                "label": "Records"
+              },
+              "children": []
+            },
+            {
+              "id": "k2-2",
+              "type": "StatCard",
+              "props": {
+                "source": "open_crews",
+                "stat": "sum",
+                "field": "size",
+                "label": "Total"
+              },
+              "children": []
+            },
+            {
+              "id": "k2-3",
+              "type": "StatCard",
+              "props": {
+                "source": "open_crews",
+                "stat": "avg",
+                "field": "size",
+                "label": "Average"
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "used": [
+      "kpi_row"
+    ]
+  }
+}

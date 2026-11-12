@@ -1,0 +1,32 @@
+{
+  "description": "a field that is not on the source's table",
+  "mode": "expand",
+  "library": [
+    "search_list"
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "k",
+        "type": "Feature",
+        "props": {
+          "featureId": "search_list",
+          "params": {
+            "source": "open_crews",
+            "search": "status"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "param_type"
+    ]
+  }
+}

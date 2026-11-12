@@ -1,0 +1,74 @@
+{
+  "description": "search_list with typical params",
+  "mode": "expand",
+  "library": [
+    "search_list"
+  ],
+  "input": {
+    "id": "root",
+    "type": "Page",
+    "props": {},
+    "children": [
+      {
+        "id": "srch",
+        "type": "Feature",
+        "props": {
+          "featureId": "search_list",
+          "params": {
+            "source": "open_crews",
+            "search": "name"
+          }
+        },
+        "children": []
+      }
+    ]
+  },
+  "expect": {
+    "ok": true,
+    "layout": {
+      "id": "root",
+      "type": "Page",
+      "props": {},
+      "children": [
+        {
+          "id": "srch",
+          "type": "Section",
+          "name": "Search list",
+          "props": {},
+          "feature": {
+            "id": "search_list",
+            "version": 1,
+            "params": {
+              "search": "name",
+              "source": "open_crews"
+            }
+          },
+          "children": [
+            {
+              "id": "srch-1",
+              "type": "SearchBox",
+              "props": {
+                "source": "open_crews",
+                "fields": [
+                  "name"
+                ]
+              },
+              "children": []
+            },
+            {
+              "id": "srch-2",
+              "type": "DataTable",
+              "props": {
+                "source": "open_crews"
+              },
+              "children": []
+            }
+          ]
+        }
+      ]
+    },
+    "used": [
+      "search_list"
+    ]
+  }
+}

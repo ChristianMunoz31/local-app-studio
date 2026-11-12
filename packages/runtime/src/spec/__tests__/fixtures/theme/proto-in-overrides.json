@@ -1,0 +1,22 @@
+{
+  "name": "proto-in-overrides",
+  "description": "A __proto__ key inside overrides",
+  "theme": {
+    "id": "slate",
+    "overrides": {
+      "__proto__": {
+        "mode": "dark"
+      }
+    }
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.overrides",
+        "code": "unrecognized_keys"
+      }
+    ]
+  }
+}

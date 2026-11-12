@@ -1,0 +1,57 @@
+{
+  "specVersion": 1,
+  "app": {
+    "name": "Invoice Desk",
+    "slug": "invoice-desk",
+    "identifier": "com.example.invoicedesk",
+    "version": "1.0.0",
+    "description": "",
+    "icon": null
+  },
+  "tables": [
+    {
+      "id": "orders",
+      "label": "Orders",
+      "fields": [
+        {
+          "id": "seq",
+          "label": "Seq",
+          "type": "integer",
+          "required": true,
+          "autoNumber": {
+            "start": 100
+          }
+        },
+        {
+          "id": "item",
+          "label": "Item",
+          "type": "text"
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "home",
+      "title": "Home",
+      "route": "/",
+      "sources": [],
+      "layout": {
+        "id": "root",
+        "type": "Page",
+        "props": {},
+        "children": []
+      }
+    }
+  ],
+  "nav": [
+    {
+      "pageId": "home",
+      "label": "Home"
+    }
+  ],
+  "theme": {
+    "preset": "aurora",
+    "radius": "md"
+  }
+}

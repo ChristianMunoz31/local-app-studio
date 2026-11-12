@@ -1,0 +1,59 @@
+{
+  "specVersion": 1,
+  "app": {
+    "name": "Invoice Desk",
+    "slug": "invoice-desk",
+    "identifier": "com.example.invoicedesk",
+    "version": "1.0.0",
+    "description": "",
+    "icon": null
+  },
+  "tables": [
+    {
+      "id": "tickets",
+      "label": "Tickets",
+      "titleField": "code",
+      "fields": [
+        {
+          "id": "code",
+          "label": "Code",
+          "type": "text",
+          "autoNumber": {
+            "prefix": "T",
+            "width": 5
+          }
+        },
+        {
+          "id": "title",
+          "label": "Title",
+          "type": "text",
+          "required": true
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "home",
+      "title": "Home",
+      "route": "/",
+      "sources": [],
+      "layout": {
+        "id": "root",
+        "type": "Page",
+        "props": {},
+        "children": []
+      }
+    }
+  ],
+  "nav": [
+    {
+      "pageId": "home",
+      "label": "Home"
+    }
+  ],
+  "theme": {
+    "preset": "aurora",
+    "radius": "md"
+  }
+}

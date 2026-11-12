@@ -1,0 +1,84 @@
+{
+  "description": "saving A when B already contains A gives feature_cycle",
+  "mode": "validate",
+  "library": [
+    {
+      "id": "bb",
+      "params": [
+        {
+          "name": "title",
+          "label": "Title",
+          "type": "text"
+        }
+      ],
+      "fragment": {
+        "id": "w",
+        "type": "Section",
+        "props": {},
+        "children": [
+          {
+            "id": "n",
+            "type": "Feature",
+            "props": {
+              "featureId": "aa",
+              "params": {
+                "title": "x"
+              }
+            },
+            "children": []
+          }
+        ]
+      },
+      "bindings": [
+        {
+          "param": "title",
+          "layer": "n",
+          "target": "props.params.title"
+        }
+      ]
+    }
+  ],
+  "input": {
+    "id": "aa",
+    "label": "aa",
+    "description": "The aa feature.",
+    "params": [
+      {
+        "name": "title",
+        "label": "Title",
+        "type": "text"
+      }
+    ],
+    "fragment": {
+      "id": "w",
+      "type": "Section",
+      "props": {},
+      "children": [
+        {
+          "id": "n",
+          "type": "Feature",
+          "props": {
+            "featureId": "bb",
+            "params": {
+              "title": "x"
+            }
+          },
+          "children": []
+        }
+      ]
+    },
+    "bindings": [
+      {
+        "param": "title",
+        "layer": "n",
+        "target": "props.params.title"
+      }
+    ]
+  },
+  "expect": {
+    "ok": false,
+    "codes": [
+      "feature_cycle"
+    ]
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "legacy-preset-ocean",
+  "description": "Legacy background ocean",
+  "theme": {
+    "preset": "ocean",
+    "radius": "lg"
+  },
+  "absent": false,
+  "expected": {
+    "ok": true,
+    "theme": {
+      "preset": "ocean",
+      "radius": "lg"
+    }
+  }
+}

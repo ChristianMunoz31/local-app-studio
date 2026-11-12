@@ -1,0 +1,175 @@
+{
+  "specVersion": 1,
+  "app": {
+    "name": "Invoice Desk",
+    "slug": "invoice-desk",
+    "identifier": "com.example.invoicedesk",
+    "version": "1.0.0",
+    "description": "",
+    "icon": null
+  },
+  "tables": [
+    {
+      "id": "clients",
+      "label": "Clients",
+      "titleField": "name",
+      "fields": [
+        {
+          "id": "name",
+          "label": "Name",
+          "type": "text",
+          "required": true
+        }
+      ]
+    },
+    {
+      "id": "invoices",
+      "label": "Invoices",
+      "titleField": "number",
+      "fields": [
+        {
+          "id": "number",
+          "label": "Number",
+          "type": "text",
+          "autoNumber": {
+            "prefix": "INV-",
+            "start": 1001,
+            "width": 4
+          },
+          "required": true
+        },
+        {
+          "id": "status",
+          "label": "Status",
+          "type": "select",
+          "options": [
+            "Draft",
+            "Sent",
+            "Paid"
+          ],
+          "default": "Draft"
+        },
+        {
+          "id": "paid",
+          "label": "Paid",
+          "type": "boolean"
+        },
+        {
+          "id": "paid_on",
+          "label": "Paid on",
+          "type": "date"
+        },
+        {
+          "id": "due",
+          "label": "Due",
+          "type": "date"
+        },
+        {
+          "id": "client_id",
+          "label": "Client",
+          "type": "reference",
+          "table": "clients"
+        },
+        {
+          "id": "total",
+          "label": "Total",
+          "type": "real"
+        },
+        {
+          "id": "note",
+          "label": "Note",
+          "type": "longtext"
+        },
+        {
+          "id": "short",
+          "label": "Short note",
+          "type": "text"
+        },
+        {
+          "id": "second_client",
+          "label": "Second client",
+          "type": "reference",
+          "table": "clients"
+        }
+      ],
+      "rules": [
+        {
+          "when": {
+            "field": "paid",
+            "is": true
+          },
+          "then": [
+            {
+              "set": "paid_on",
+              "to": "today"
+            }
+          ]
+        },
+        {
+          "when": {
+            "field": "paid",
+            "is": false
+          },
+          "then": [
+            {
+              "set": "paid_on",
+              "to": "clear"
+            }
+          ]
+        },
+        {
+          "when": {
+            "field": "status",
+            "is": "Sent"
+          },
+          "then": [
+            {
+              "set": "second_client",
+              "to": {
+                "field": "client_id"
+              }
+            }
+          ]
+        },
+        {
+          "when": {
+            "field": "status",
+            "is": "Paid"
+          },
+          "then": [
+            {
+              "set": "short",
+              "to": {
+                "field": "note"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "id": "home",
+      "title": "Home",
+      "route": "/",
+      "sources": [],
+      "layout": {
+        "id": "root",
+        "type": "Page",
+        "props": {},
+        "children": []
+      }
+    }
+  ],
+  "nav": [
+    {
+      "pageId": "home",
+      "label": "Home"
+    }
+  ],
+  "theme": {
+    "preset": "aurora",
+    "radius": "md"
+  }
+}

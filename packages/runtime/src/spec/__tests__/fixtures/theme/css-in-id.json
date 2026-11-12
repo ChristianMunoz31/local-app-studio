@@ -1,0 +1,17 @@
+{
+  "name": "css-in-id",
+  "description": "CSS text in the id",
+  "theme": {
+    "id": "red; background: url(http://x)"
+  },
+  "absent": false,
+  "expected": {
+    "ok": false,
+    "issues": [
+      {
+        "path": "theme.id",
+        "code": "invalid_value"
+      }
+    ]
+  }
+}
