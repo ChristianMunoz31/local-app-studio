@@ -14,7 +14,7 @@ let wt = '';
 const git = (args, cwd) => execFileSync('git', args, { cwd, stdio: 'pipe', encoding: 'utf8' });
 
 beforeAll(() => {
-  root = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), 'cleanup-dry-')));
+  root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), 'cleanup-dry-')));
   repo = path.join(root, 'main-checkout');
   wt = path.join(root, 'las-wt-phase99');
   fs.mkdirSync(repo);

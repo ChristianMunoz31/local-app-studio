@@ -9,7 +9,10 @@ import { isPreviewServer, main, planRestart } from '../../scripts/phase/preview.
 const MAIN = 'D:\\proj\\local-app-studio';
 const ok = { ok: true, why: 'node server.js of the main checkout' };
 
-describe('isPreviewServer', () => {
+// preview.js is Windows only: it reads ports with netstat.exe, processes with PowerShell (cwdScan.ps1) and stops with taskkill.exe, and compares Windows paths.
+const winOnly = process.platform !== 'win32';
+
+describe.skipIf(winOnly)('isPreviewServer', () => {
   it('accepts node server.js of the main checkout, by command line or by directory', () => {
     expect(isPreviewServer({ name: 'node.exe', cmd: `node --import ./scripts/lib/proHook.js ${MAIN}\\server.js`, cwd: null }, MAIN).ok).toBe(true);
     expect(isPreviewServer({ name: 'node.exe', cmd: 'node --import ./scripts/lib/proHook.js server.js', cwd: MAIN }, MAIN).ok).toBe(true);
@@ -24,7 +27,7 @@ describe('isPreviewServer', () => {
   });
 });
 
-describe('isPreviewServer: the server.js argument must resolve inside the checkout', () => {
+describe.skipIf(winOnly)('isPreviewServer: the server.js argument must resolve inside the checkout', () => {
   it('refuses a checkout path that only appears elsewhere on the command line', () => {
     const a = isPreviewServer({ name: 'node.exe', cmd: `node D:\\other\\app\\server.js --root ${MAIN}`, cwd: 'D:\\other\\app' }, MAIN);
     expect(a.ok).toBe(false);
@@ -65,7 +68,7 @@ describe('planRestart', () => {
   });
 });
 
-describe('preview main', () => {
+describe.skipIf(winOnly)('preview main', () => {
   let dir = '';
   let data = '';
   beforeAll(() => {

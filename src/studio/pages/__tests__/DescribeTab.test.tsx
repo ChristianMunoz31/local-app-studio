@@ -219,6 +219,7 @@ describe('DescribeTab', () => {
     mockApi((call) => (call.url.endsWith('/describe') ? proposalReply(withPage()) : json(404, {})));
     const { chrome } = renderDescribe({ spec: starterSpec() });
     await make('Add a page');
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 3, name: 'What the helper made' })));
     fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
     expect(((await screen.findByLabelText('Your prompt')) as HTMLTextAreaElement).value).toBe('Add a page');
     expect(document.activeElement).toBe(screen.getByLabelText('Your prompt'));
@@ -231,6 +232,7 @@ describe('DescribeTab', () => {
     writePrompt(APP_ID, 'My first words');
     const { chrome } = renderDescribe();
     await ask('Add a page');
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 3, name: 'Your changes' })));
     fireEvent.click(await screen.findByRole('button', { name: 'Try again' }));
     await waitFor(() => expect(document.activeElement).toBe(screen.getByLabelText('Ask for a change')));
     expect(chrome.announce).toHaveBeenCalledWith('Change your words, then press Ask.');

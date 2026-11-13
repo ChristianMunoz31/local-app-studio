@@ -71,6 +71,9 @@ export function defaultDoctorFacade() {
   };
 }
 
+// The path rules of the machine being described (f.platform), not of the machine running the code; they are the same on a real machine.
+export const pathFor = (f) => (f.platform === 'win32' ? path.win32 : path.posix);
+
 const gb = (bytes) => `${(bytes / GIB).toFixed(1)} GB`;
 const line = (id, label, status, detail = '', action = '') => ({ id, label, status, detail, action: status === 'found' ? '' : action });
 
@@ -94,7 +97,7 @@ function statfsNear(f, dir) {
     try {
       return { stats: f.statfs(cur), at: cur };
     } catch {
-      const up = path.dirname(cur);
+      const up = pathFor(f).dirname(cur);
       if (up === cur) return null;
       cur = up;
     }
@@ -102,14 +105,15 @@ function statfsNear(f, dir) {
   return null;
 }
 
-function driveOf(dir) {
-  const root = path.parse(path.resolve(dir)).root;
+export function driveOf(f, dir) {
+  const p = pathFor(f);
+  const root = p.parse(p.resolve(dir)).root;
   return root.replace(/[\\/]+$/, '') || root;
 }
 
 function diskLine(f, dataDir) {
   const found = statfsNear(f, dataDir);
-  const drive = driveOf(dataDir);
+  const drive = driveOf(f, dataDir);
   if (!found) return line('disk', 'Free disk space', 'problem', 'Could not read the free space.', `Check that ${drive} is available, then check again.`);
   const free = Number(found.stats.bavail) * Number(found.stats.bsize);
   if (free >= MIN_DISK_BYTES) return line('disk', 'Free disk space', 'found', `${gb(free)} free on ${drive}`);
@@ -180,12 +184,13 @@ function ollamaLine(state) {
 }
 
 function playwrightDir(f) {
+  const p = pathFor(f);
   const set = (f.env.PLAYWRIGHT_BROWSERS_PATH ?? '').trim();
-  if (set === '0') return path.join(f.repoRoot, 'node_modules', 'playwright-core', '.local-browsers');
+  if (set === '0') return p.join(f.repoRoot, 'node_modules', 'playwright-core', '.local-browsers');
   if (set) return set;
-  if (f.platform === 'win32') return path.join(f.env.LOCALAPPDATA || path.join(os.homedir(), 'AppData', 'Local'), 'ms-playwright');
-  if (f.platform === 'darwin') return path.join(os.homedir(), 'Library', 'Caches', 'ms-playwright');
-  return path.join(os.homedir(), '.cache', 'ms-playwright');
+  if (f.platform === 'win32') return p.join(f.env.LOCALAPPDATA || p.join(os.homedir(), 'AppData', 'Local'), 'ms-playwright');
+  if (f.platform === 'darwin') return p.join(os.homedir(), 'Library', 'Caches', 'ms-playwright');
+  return p.join(os.homedir(), '.cache', 'ms-playwright');
 }
 
 function playwrightLine(f) {

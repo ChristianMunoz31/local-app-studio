@@ -81,26 +81,34 @@ describe('port holders over IPv4 and IPv6', () => {
   });
 });
 
-describe('absolute tool paths', () => {
-  it('calls PowerShell by its System32 path and resolves git from an absolute PATH entry only', () => {
+// powershellExe is the System32 path, Windows only
+describe.skipIf(process.platform !== 'win32')('absolute PowerShell path', () => {
+  it('calls PowerShell by its System32 path', () => {
     expect(path.isAbsolute(powershellExe())).toBe(true);
     expect(powershellExe().toLowerCase()).toMatch(/system32.windowspowershell.v1\.0.powershell\.exe$/);
+  });
+});
+
+describe('absolute tool paths', () => {
+  const GIT = process.platform === 'win32' ? 'git.exe' : 'git';
+
+  it('resolves git from an absolute PATH entry only', () => {
     const tools = path.resolve('/Tools');
     const seen = [];
     const exists = (p) => {
       seen.push(p);
-      return p === path.join(tools, 'git.exe');
+      return p === path.join(tools, GIT);
     };
-    expect(gitExe({ PATH: ['.', 'bin', tools].join(path.delimiter) }, exists)).toBe(path.join(tools, 'git.exe'));
-    expect(seen).toEqual([path.join(tools, 'git.exe')]);
+    expect(gitExe({ PATH: ['.', 'bin', tools].join(path.delimiter) }, exists)).toBe(path.join(tools, GIT));
+    expect(seen).toEqual([path.join(tools, GIT)]);
   });
 
   it('skips PATH entries inside the repo root and returns null when nothing absolute is found', () => {
     const root = path.resolve('/Repo');
     const bin = path.join(root, 'node_modules', '.bin');
-    const exists = (p) => p.startsWith(root) || p === path.join(path.resolve('/Elsewhere'), 'git.exe');
+    const exists = (p) => p.startsWith(root) || p === path.join(path.resolve('/Elsewhere'), GIT);
     expect(gitExe({ PATH: [bin, root].join(path.delimiter), ProgramFiles: root }, exists, root)).toBeNull();
-    expect(gitExe({ PATH: [bin, path.resolve('/Elsewhere')].join(path.delimiter) }, exists, root)).toBe(path.join(path.resolve('/Elsewhere'), 'git.exe'));
+    expect(gitExe({ PATH: [bin, path.resolve('/Elsewhere')].join(path.delimiter) }, exists, root)).toBe(path.join(path.resolve('/Elsewhere'), GIT));
     expect(gitExe({ PATH: '' }, () => false, root)).toBeNull();
   });
 });
