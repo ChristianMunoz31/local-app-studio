@@ -147,6 +147,10 @@ async function renderSettings(url = '/settings') {
 
 const navs = () => screen.getAllByRole('navigation', { name: 'Settings sections' });
 const item = (nav, name) => within(nav).getByRole('link', { name });
+// A lazy section swaps its loading card for the real one when its chunk arrives, and that is a new element. A test that
+// compares the scrolled or focused element by identity waits for the swap first, or a slow runner clicks the loading card.
+const sectionLoaded = (id) =>
+  waitFor(() => expect(within(document.getElementById(id)).queryByText('Loading this section.')).toBeNull());
 
 // Heavy render-and-wait suite: raise the time limits so a busy machine does not trip them.
 allowSlowSuite();
@@ -217,6 +221,7 @@ describe('click behaviour on /settings', () => {
     const replaceState = vi.spyOn(window.history, 'replaceState');
     const pushState = vi.spyOn(window.history, 'pushState');
     await renderSettings();
+    await sectionLoaded('api-keys');
 
     await user.click(item(navs()[1], 'Connected services'));
 
@@ -236,6 +241,7 @@ describe('click behaviour on /settings', () => {
   it('works from the mobile pill bar too', async () => {
     const user = userEvent.setup();
     await renderSettings();
+    await sectionLoaded('data-storage');
     await user.click(item(navs()[0], 'Data & storage'));
     expect(scrollIntoView.mock.contexts[0]).toBe(document.getElementById('data-storage'));
     expect(document.activeElement).toBe(document.getElementById('data-storage-heading'));
