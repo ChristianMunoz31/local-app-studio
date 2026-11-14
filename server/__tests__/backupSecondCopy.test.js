@@ -59,7 +59,7 @@ import { backupFile, cleanupBackupEnv, dataDir, day, fakeUploadReq, names, noSle
 const temps = [];
 /** A fresh empty folder outside the data folder (real path, so path comparisons are exact). */
 function makeDest(label = 'dest') {
-  const dir = fs.realpathSync(fs.mkdtempSync(path.join(os.tmpdir(), `las-copyto-${label}-`)));
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), `las-copyto-${label}-`)));
   temps.push(dir);
   return dir;
 }
