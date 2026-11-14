@@ -1,14 +1,14 @@
 // Assistant on the local tool model, through the real server.js and a real temp database, with a
-// scripted fake Ollama behind node-fetch: delta streaming, tool validation, text-embedded
+// scripted fake Ollama behind the fetch seam: delta streaming, tool validation, text-embedded
 // tool calls, the one corrective retry and POST /api/assistant/actions. Studio mode has one read tool
 // (list_features) and no write tool; the write-confirmation flow is covered in runtime/assistantRuntime.test.js.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { installFakeOllama, textReply, toolReply } from './helpers/fakeOllama.js';
 import { __resetAiForTests } from '../ai/index.js';
 import { __resetPendingActionsForTests } from '../agents/pendingActions.js';

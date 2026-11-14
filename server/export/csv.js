@@ -25,9 +25,17 @@ export function cellText(value, type) {
  * @returns {string} CSV with CRLF row endings (header-only when there are no rows)
  */
 export function toCsv(columns, rows) {
-  const lines = [columns.map((c) => cellText(c.name, 'header')).join(',')];
-  for (const row of rows) {
-    lines.push(columns.map((c) => cellText(row?.[c.name], c.type)).join(','));
-  }
-  return `${lines.join('\r\n')}\r\n`;
+  return csvHeader(columns) + csvRows(columns, rows);
+}
+
+/** @returns {string} the header row, CRLF ended */
+export function csvHeader(columns) {
+  return `${columns.map((c) => cellText(c.name, 'header')).join(',')}\r\n`;
+}
+
+/** @returns {string} the rows only (no header), each CRLF ended; lets a stream write page by page */
+export function csvRows(columns, rows) {
+  let out = '';
+  for (const row of rows) out += `${columns.map((c) => cellText(row?.[c.name], c.type)).join(',')}\r\n`;
+  return out;
 }

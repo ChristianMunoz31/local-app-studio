@@ -47,6 +47,7 @@ function violations(file, source) {
   const out = [];
   for (const spec of specifiers(src)) {
     if (FORBIDDEN_MODULES.includes(spec) && !ALLOWED_IMPORTS.get(file)?.includes(spec)) out.push(`imports ${spec}`);
+    if (/(?:^|\/)net\/fetch(?:\.js)?$/.test(spec)) out.push('imports the fetch seam');
   }
   const calls = [
     [/(?<![.\w])fetch\s*\(/, 'calls fetch('],
@@ -65,6 +66,7 @@ describe('model output only flows into the validator and into words (P5)', () =>
     expect(violations('x.js', "import fs from 'node:fs';")).toEqual(['x.js imports fs']);
     expect(violations('x.js', "const cp = require('child_process');")).toEqual(['x.js imports child_process']);
     expect(violations('x.js', "import { request } from 'node:https';")).toEqual(['x.js imports https']);
+    expect(violations('x.js', "import fetch from '../net/fetch.js';")).toEqual(['x.js imports the fetch seam']);
     expect(violations('x.js', 'await fetch(url);')).toEqual(['x.js calls fetch(']);
     expect(violations('x.js', 'spawn("a");')).toEqual(['x.js starts a process']);
     expect(violations('x.js', 'await updateAiSettings({});')).toEqual(['x.js calls a settings or netPolicy writer']);

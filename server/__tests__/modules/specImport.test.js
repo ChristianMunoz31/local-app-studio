@@ -36,7 +36,7 @@ describe('server/spec/index.js', () => {
         "const root = { id: 'r', type: 'Page', props: {}, children: [{ id: 'x', type: 'Nope', props: {}, children: [] }] };" +
         "console.log(JSON.stringify({ parts: PART_DEFINITIONS.length, codes: checkLayer(root, SPIKE_PART_CONTEXT, 'layout').map((i) => i.code) }));",
     );
-    expect(JSON.parse(out)).toEqual({ parts: 34, codes: ['unknown_part'] });
+    expect(JSON.parse(out)).toEqual({ parts: 36, codes: ['unknown_part'] });
   });
 
   it('loads the Studio routes in plain Node (they import the schema and the catalog)', () => {

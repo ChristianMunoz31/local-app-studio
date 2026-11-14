@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { APP_SPEC_RELATIVE_PATH, BUNDLED_APP_MODE, getAppMode } from '../appMode.js';
 import { checkSpecShape, compileSpec } from './compile.js';
 import { normalizeSpec } from './normalize.js';
+import { specCompatProblem } from '@local-app-studio/runtime/runtime/specCompat.js';
 
 export const BUNDLED_SPEC_JSON = typeof __APP_SPEC_JSON__ === 'string' ? __APP_SPEC_JSON__ : undefined;
 
@@ -36,7 +37,8 @@ function parseJson(text) {
 /**
  * @param {{ env?: Record<string, string | undefined>, mode?: 'studio' | 'runtime', bundledMode?: string, bundledJson?: string, root?: string }} [opts]
  * @returns {{ kind: 'baked' | 'file' | 'path' | 'none', spec: object | null }} spec is normalized
- * @throws {Error} app_spec_unreadable, or `app_spec_invalid: <problem>`
+ * @throws {Error} app_spec_unreadable, `app_spec_invalid: <problem>`, or `spec_too_new: <sentence>` (code `spec_too_new`, `sentence`;
+ *   the design uses something newer than this version, ADR-015)
  */
 export function resolveSpecSource({
   env = process.env,
@@ -69,11 +71,28 @@ export function resolveSpecSource({
       kind = 'path';
     }
   }
-  const spec = normalizeSpec(raw);
+  const spec = acceptSpec(raw);
   if (spec === null) return { kind: 'none', spec: null };
+  return { kind, spec };
+}
+
+/**
+ * The checks a running app makes on the spec it reads, apart from where it reads it: normalize, refuse what is newer, check the
+ * shape. The Studio preview manager runs the same function on a saved spec before it keeps a running child (preview/swap.js).
+ * @param {unknown} raw the parsed spec file or baked JSON
+ * @returns {object | null} the normalized spec, or null when there is none
+ * @throws {Error} `app_spec_invalid: <problem>` or `spec_too_new: <sentence>` (code `spec_too_new`, `sentence`)
+ */
+export function acceptSpec(raw) {
+  const spec = normalizeSpec(raw);
+  if (spec === null) return null;
+  // No schema runs here, so an unknown key is checked as well as the positive evidence (ADR-015). A different specVersion is
+  // left to checkSpecShape below (`app_spec_invalid`), as before.
+  const newer = specCompatProblem(spec, undefined, { unknownKeys: true, version: false });
+  if (newer) throw Object.assign(new Error(`spec_too_new: ${newer.sentence}`), { code: 'spec_too_new', sentence: newer.sentence });
   const problem = checkSpecShape(spec);
   if (problem) throw new Error(`app_spec_invalid: ${problem}`);
-  return { kind, spec };
+  return spec;
 }
 
 let cachedSpec;

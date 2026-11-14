@@ -79,7 +79,7 @@ import { connectionIssues, connectionOf } from './connections';
 import { blockName, needsWords, tableLabel } from './designLabels';
 import { DRAG_INSTRUCTIONS, dragAnnouncements } from './dragWords';
 import type { DragPlace } from './dragWords';
-import { DesignContext, sideKey, zoneKey } from './DesignContext';
+import { DesignContext, LiveContext, createLiveStore, sideKey, zoneKey } from './DesignContext';
 import type { CrossPlace, DesignContextValue, DragInfo, GridHover, GridSpeechKind, Pending, TableRequest, Tree } from './DesignContext';
 import DesignCanvas from './DesignCanvas';
 import { cellAt, measureGrid } from './gridMetrics';
@@ -193,6 +193,8 @@ const collide: CollisionDetection = (args) => {
 const GRID_REASONS: ReadonlySet<string> = new Set(['grid_overlap', 'grid_edge', 'grid_full', 'not_free']);
 
 const EMPTY_ZONES: ReadonlySet<string> = new Set<string>();
+/** One options object for good: a new one each render makes new sensors, so dnd-kit hands every draggable new listeners and the memo blocks and tiles draw again. */
+const POINTER_OPTIONS = { activationConstraint: { distance: 6 } };
 
 interface OverData {
   kind?: 'side' | 'refuse' | 'grid';
@@ -377,9 +379,10 @@ export default function DesignSession({
   const [settingsFocus, setSettingsFocus] = useState<string | null>(null);
   const [kept, setKept] = useState<ReadonlySet<string>>(() => readKept(appId));
   const [drag, setDrag] = useState<(DragInfo & { label: string; fromFeature?: boolean }) | null>(null);
-  const [resizing, setResizing] = useState<DesignContextValue['resizing']>(null);
-  const [gridPreview, setGridPreview] = useState<DesignContextValue['gridPreview']>(null);
-  const [gridHover, setGridHover] = useState<GridHover | null>(null);
+  // The resize preview, the grid preview and the hovered cell change on every pointer move, so they live outside the render of the session.
+  const [gesture] = useState(createLiveStore);
+  const previewResize = useCallback<DesignContextValue['previewResize']>((p) => gesture.set('resizing', p), [gesture]);
+  const previewGrid = useCallback<DesignContextValue['previewGrid']>((p) => gesture.set('gridPreview', p), [gesture]);
   const [shelfTab, setShelfTab] = useState<ShelfTab>(initialTab);
   const [filters, setFilters] = useState<ShelfFilters>({ category: 'all', query: '' });
   const [filtersTouched, setFiltersTouched] = useState(false);
@@ -1006,7 +1009,7 @@ export default function DesignSession({
     onHostDoc?.({ root, sources, tables });
   }, [onHostDoc, root, sources, tables]);
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
+  const sensors = useSensors(useSensor(PointerSensor, POINTER_OPTIONS));
 
   // The pointer while a part is dragged: its last client point (before the first move, where the drag began), the part being moved
   // and the free Grid it is over. Refs, so the window listener and the announcements read them without a render.
@@ -1037,12 +1040,10 @@ export default function DesignSession({
     return found === null ? null : { gridId, place: found.place, free: found.free };
   }, []);
   const showHover = useCallback((next: GridHover | null): void => {
-    setGridHover((prev) => {
-      if (prev === next) return prev;
-      if (prev !== null && next !== null && prev.gridId === next.gridId && prev.free === next.free && prev.place.col === next.place.col && prev.place.span === next.place.span && prev.place.row === next.place.row && prev.place.rowSpan === next.place.rowSpan) return prev;
-      return next;
-    });
-  }, []);
+    const prev = gesture.get().gridHover;
+    if (prev !== null && next !== null && prev.gridId === next.gridId && prev.free === next.free && prev.place.col === next.place.col && prev.place.span === next.place.span && prev.place.row === next.place.row && prev.place.rowSpan === next.place.rowSpan) return;
+    gesture.set('gridHover', next);
+  }, [gesture]);
   const stopPointer = useCallback((): void => {
     if (pointerListener.current !== null) window.removeEventListener('pointermove', pointerListener.current, true);
     pointerListener.current = null;
@@ -1052,8 +1053,8 @@ export default function DesignSession({
     frame.current = null;
     tracks.current = null;
     overGrid.current = null;
-    setGridHover(null);
-  }, [invalidateTracks]);
+    gesture.set('gridHover', null);
+  }, [invalidateTracks, gesture]);
   useEffect(() => stopPointer, [stopPointer]);
   // The drag announcements name the cell under the pointer when they are spoken, so they read it through this (set after each render).
   const gridPlaceRef = useRef<(gridId: string) => DragPlace | null>(() => null);
@@ -1243,12 +1244,12 @@ export default function DesignSession({
     drag: drag === null ? null : { type: drag.type, movingId: drag.movingId, tree: drag.tree, refusal: drag.refusal },
     zones,
     sideZones,
-    resizing,
-    previewResize: setResizing,
+    resizing: null,
+    previewResize,
     gridZones,
-    gridHover,
-    gridPreview,
-    previewGrid: setGridPreview,
+    gridHover: null,
+    gridPreview: null,
+    previewGrid,
     announceGrid,
     pending,
     addHere: (target) => addHere(target, 'page'),
@@ -1612,6 +1613,7 @@ export default function DesignSession({
 
   return (
     <DesignContext.Provider value={context}>
+      <LiveContext.Provider value={gesture}>
       <div onKeyDown={onKeyDown} className="mx-auto w-full max-w-screen-2xl">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-slate-slate700/60 px-4 py-2">
           <a
@@ -1898,6 +1900,7 @@ export default function DesignSession({
           />
         )}
       </div>
+      </LiveContext.Provider>
     </DesignContext.Provider>
   );
 }

@@ -5,6 +5,7 @@ import { PRODUCT_NAME, PRODUCT_NAME_START } from '../../hooks/useHiddenNetworkFe
 import { BACKUP_TOO_LARGE_MESSAGE, BACKUP_UPLOAD_MAX_BYTES, uploadBackupFile } from '../../services/backupService';
 import { formatBackupDate, formatBytes, plural } from '../../utils/backupFormat';
 import BackupAutoSwitch, { AUTO_PAUSED_TEXT } from './BackupAutoSwitch';
+import BackupCopyToForm from './BackupCopyToForm';
 import BackupRestoreConfirm from './BackupRestoreConfirm';
 import BackupRetentionForm from './BackupRetentionForm';
 import BackupStatusLine from './BackupStatusLine';
@@ -52,19 +53,35 @@ const switchState = (status) => ({ userOn: status?.autoSwitch !== false, running
 function introText(data) {
   if (!data) return 'Backups are saved as files on this computer. Nothing leaves your computer.';
   const { userOn, running } = switchState(data.status);
+  // With a second folder set, copies can leave this PC (a network or synced folder): never claim otherwise.
+  const tail = (data.secondCopy ?? data.status?.secondCopy)?.enabled
+    ? 'Each new backup is also copied to your second folder.'
+    : 'Nothing leaves your computer.';
   if (!userOn) {
-    return 'Automatic backups are off. Use Back up now to save a backup file of your data on this computer. Nothing leaves your computer.';
+    return `Automatic backups are off. Use Back up now to save a backup file of your data on this computer. ${tail}`;
   }
-  if (!running) return `${AUTO_PAUSED_TEXT} Nothing leaves your computer.`;
-  return `${PRODUCT_NAME_START} saves a backup file of your data on this computer about once a day and keeps recent ones. Nothing leaves your computer.`;
+  if (!running) return `${AUTO_PAUSED_TEXT} ${tail}`;
+  return `${PRODUCT_NAME_START} saves a backup file of your data on this computer about once a day and keeps recent ones. ${tail}`;
 }
 
 export default function BackupsControl({ onRestored }) {
   const headingId = useId();
   const fileId = useId();
   const fileHintId = useId();
-  const { data, isLoading, error, refetch, isRefetching, backUpNow, isBackingUp, saveSettings, isSaving, setAuto } =
-    useBackups();
+  const {
+    data,
+    isLoading,
+    error,
+    refetch,
+    isRefetching,
+    backUpNow,
+    isBackingUp,
+    saveSettings,
+    isSaving,
+    setAuto,
+    setCopyTo,
+    isSettingCopyTo,
+  } = useBackups();
 
   const [confirming, setConfirming] = useState(null); // backup id | 'upload' | null
   const [backupMessage, setBackupMessage] = useState('');
@@ -383,6 +400,16 @@ export default function BackupsControl({ onRestored }) {
       {data && (
         <div className="mt-4">
           <BackupRetentionForm settings={data.settings} onSave={saveSettings} saving={isSaving} locked={restoring} />
+        </div>
+      )}
+      {data && (
+        <div className="mt-4">
+          <BackupCopyToForm
+            secondCopy={data.secondCopy ?? data.status?.secondCopy}
+            onSave={setCopyTo}
+            saving={isSettingCopyTo}
+            locked={restoring}
+          />
         </div>
       )}
 

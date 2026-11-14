@@ -6,10 +6,10 @@ import request from 'supertest';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../../net/fetch.js', () => ({ default: vi.fn() }));
 vi.mock('../../studio/describe/pipeline.js', async (importOriginal) => ({ ...(await importOriginal()), runDescribe: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../../net/fetch.js';
 import { __resetAiForTests } from '../../ai/index.js';
 import { buildExportZip } from '../../export/buildArchive.js';
 import { importZipBuffer } from '../../import/importExport.js';

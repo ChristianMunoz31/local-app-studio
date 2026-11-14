@@ -77,12 +77,27 @@ describe('good fixtures', () => {
       expect(roundTrip(kept(r.value))).toEqual(roundTrip(kept(input)));
     });
   }
-  it('the compiler and the migration planner ignore both keys', () => {
+  // ADR-014: the one thing a rule changes is an index on the status field it watches. No column, table or other step.
+  it('the compiler and the migration planner ignore both keys, apart from the index on the status field a rule watches', () => {
     const withKeys = read(fx('automations', 'rules-paid.json'));
     const plain = withoutAutomations(withKeys);
-    expect(compileSpec(withKeys)).toEqual(compileSpec(plain));
-    expect(planMigration(plain, withKeys)).toEqual({ ok: true, file: null });
-    expect(planMigration(null, withKeys)).toEqual(planMigration(null, plain));
+    const noIndex = (sql: string): string => sql.split('\n').filter((l) => l !== 'CREATE INDEX IF NOT EXISTS "idx:invoices:paid" ON "invoices" ("paid");').join('\n');
+    const compiled = compileSpec(withKeys);
+    // createSql never carries a derived index (its hash is recorded in databases); indexSql does.
+    expect(compiled.createSql).not.toContain('IF NOT EXISTS');
+    expect(compiled.indexSql).toContain('CREATE INDEX IF NOT EXISTS "idx:invoices:paid" ON "invoices" ("paid");');
+    expect({ ...compiled, indexSql: noIndex(compiled.indexSql) }).toEqual(compileSpec(plain));
+    const plan = planMigration(plain, withKeys);
+    expect(plan).toEqual({
+      ok: true,
+      file: {
+        name: '002_app.sql',
+        sql: '-- app-migration: alter\n-- Generated from the app spec by Local App Studio. Do not edit.\n\nCREATE INDEX IF NOT EXISTS "idx:invoices:paid" ON "invoices" ("paid");\n',
+      },
+    });
+    const first = planMigration(null, withKeys);
+    const firstPlain = planMigration(null, plain);
+    expect(first.ok && firstPlain.ok && first.file && firstPlain.file && noIndex(first.file.sql) === firstPlain.file.sql).toBe(true);
   });
   it('a numbered integer field may be required', () => {
     expect(S.validateAppSpec(read(fx('automations', 'auto-integer.json'))).ok).toBe(true);

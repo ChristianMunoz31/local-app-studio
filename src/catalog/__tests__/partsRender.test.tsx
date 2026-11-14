@@ -101,6 +101,7 @@ describe('JS defaults equal the zod defaults', () => {
     ProgressBar: { source: 'open_crews', label: 'L' },
     Timeline: { source: 'open_tasks', dateField: 'due' },
     Checklist: { source: 'open_tasks', field: 'done' },
+    Kanban: { source: 'open_crews', field: 'status' },
     SortControl: { source: 'open_crews', fields: ['name'] },
     QuickAdd: { table: 'crews', field: 'name' },
   };

@@ -17,8 +17,10 @@ import { DataTable } from '@local-app-studio/runtime/catalog/parts/DataTable.tsx
 import { Divider } from '@local-app-studio/runtime/catalog/parts/Divider.tsx';
 import type { EditorProps } from '@local-app-studio/runtime/catalog/parts/editorProps.ts';
 import { FilterBar } from '@local-app-studio/runtime/catalog/parts/FilterBar.tsx';
+import { GlobalSearch } from '@local-app-studio/runtime/catalog/parts/GlobalSearch.tsx';
 import { Grid } from '@local-app-studio/runtime/catalog/parts/Grid.tsx';
 import { Heading } from '@local-app-studio/runtime/catalog/parts/Heading.tsx';
+import { Kanban } from '@local-app-studio/runtime/catalog/parts/Kanban.tsx';
 import { Link } from '@local-app-studio/runtime/catalog/parts/Link.tsx';
 import { NavLinks } from '@local-app-studio/runtime/catalog/parts/NavLinks.tsx';
 import { Page } from '@local-app-studio/runtime/catalog/parts/Page.tsx';
@@ -77,4 +79,6 @@ export const PART_COMPONENTS: Readonly<Record<string, ComponentType<PartComponen
   Checklist: part(Checklist),
   SortControl: part(SortControl),
   QuickAdd: part(QuickAdd),
+  GlobalSearch: part(GlobalSearch),
+  Kanban: part(Kanban),
 };

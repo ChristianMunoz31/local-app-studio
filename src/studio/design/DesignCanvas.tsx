@@ -2,7 +2,7 @@
 // around every part and drop zones between them. A saved feature is one block (its parts are drawn but cannot be picked).
 // Parts side by side are drawn in rows with the runtime's own class table and grouping (sizingClasses.ts), so the canvas and
 // the Preview lay a page out the same way.
-import { Component, useState } from 'react';
+import { Component, memo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { PART_COMPONENTS } from '@/catalog/components';
 import { CatalogPageProvider } from '@/catalog/context';
@@ -19,7 +19,7 @@ import { isFreeGrid } from '../lib/gridLayout';
 import ThemeScope from '../theme/ThemeScope';
 import CanvasBlock from './CanvasBlock';
 import { ChromeProvider } from './ChromeLayer';
-import { useDesign } from './DesignContext';
+import { useDesign, useLiveWhere } from './DesignContext';
 import type { DesignContextValue } from './DesignContext';
 import DropZone from './DropZone';
 import GridDropArea from './GridDropArea';
@@ -47,8 +47,17 @@ interface NodeProps {
   count: number;
 }
 
-function CanvasNode({ layer, parent, index, count }: NodeProps) {
-  const { resizing, gridPreview, tree, data } = useDesign();
+/**
+ * One block of the canvas. This shell reads the context (it draws again for every change of it, which is cheap) and the body is a
+ * memo: a part is drawn again only when its layer, its place, the tree or the page data changes, not for a new selection, a drag, a
+ * sibling's edit or a gesture.
+ */
+function CanvasNode(props: NodeProps) {
+  const { tree, data } = useDesign();
+  return <NodeBody {...props} tree={tree} data={data} />;
+}
+
+const NodeBody = memo(function NodeBody({ layer, parent, index, count, tree, data }: NodeProps & Pick<DesignContextValue, 'tree' | 'data'>) {
   const Part = Object.hasOwn(PART_COMPONENTS, layer.type) ? PART_COMPONENTS[layer.type] : null;
   const def = getPartDefinition(layer.type);
   // Tabs and Columns hold only their panels and columns, and a grid lays parts out by position, so none of them offers a place
@@ -102,6 +111,32 @@ function CanvasNode({ layer, parent, index, count }: NodeProps) {
       </CanvasBlock>
     );
   }
+  // One component type for every container: a drop or a width that turns a plain container into one with a row (or back) must not
+  // unmount its subtree (Tabs' open tab, dnd-kit registrations, PartBoundary state). LiveContainer subscribes through a filter.
+  return <LiveContainer layer={layer} parent={parent} index={index} zones={zones} tree={tree} />;
+});
+
+interface ContainerProps extends Omit<NodeProps, 'count'> {
+  zones: { before: boolean; after: boolean; sides: boolean };
+  tree: DesignContextValue['tree'];
+  resizing: Resizing;
+  gridPreview: DesignContextValue['gridPreview'];
+}
+
+/**
+ * A container that follows the resize and grid previews (they change on every pointer move). It sees a preview only when it
+ * concerns one of its own children, else a stable null, so a container the gesture does not touch is not drawn again.
+ */
+function LiveContainer(props: Omit<ContainerProps, 'resizing' | 'gridPreview'>) {
+  const kids = Array.isArray(props.layer.children) ? props.layer.children : [];
+  const has = (id: string): boolean => kids.some((k) => k.id === id);
+  const resizing = useLiveWhere('resizing', (r) => has(r.leftId) || has(r.rightId));
+  const gridPreview = useLiveWhere('gridPreview', (g) => has(g.id));
+  return <Container {...props} resizing={resizing} gridPreview={gridPreview} />;
+}
+
+function Container({ layer, parent, index, zones, tree, resizing, gridPreview }: ContainerProps) {
+  const Part = PART_COMPONENTS[layer.type];
   const kids = Array.isArray(layer.children) ? layer.children : [];
   const free = isFreeGrid(layer);
   const emptyZone =

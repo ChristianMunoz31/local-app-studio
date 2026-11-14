@@ -10,7 +10,7 @@ import { GRID_LIMITS, readGridProps } from '@local-app-studio/runtime/spec/gridP
 import type { LayoutLayer } from '@local-app-studio/runtime/spec/schema';
 import { TARGET_WORDS } from '../lib/gridWords';
 import { ChromePortal } from './ChromeLayer';
-import { useDesign } from './DesignContext';
+import { useDesign, useLive } from './DesignContext';
 import { dropRowsTemplate, measureGrid } from './gridMetrics';
 
 /** One dotted cell: an outer line that softens the look and an inner outline held at 3:1 against the surfaces (gridOverlayContrast.test.ts). */
@@ -27,7 +27,9 @@ const FREE_PILL = 'rounded-full bg-slate-brand px-2.5 py-0.5 text-sm font-semibo
 const TAKEN_PILL = 'inline-flex items-center gap-1 rounded-full border-2 border-accent-red bg-slate-slate800 px-2.5 py-0.5 text-sm font-semibold text-accent-red';
 
 export default function GridDropArea({ grid }: { grid: LayoutLayer }) {
-  const { drag, gridZones, gridHover, gridPreview } = useDesign();
+  const { drag, gridZones } = useDesign();
+  const gridHover = useLive('gridHover');
+  const gridPreview = useLive('gridPreview');
   const accepting = drag !== null && gridZones.has(grid.id);
   const active = accepting || gridPreview?.gridId === grid.id;
   const { setNodeRef, isOver } = useDroppable({ id: `grid:${grid.id}`, data: { kind: 'grid', gridId: grid.id, tree: 'page' }, disabled: !accepting });

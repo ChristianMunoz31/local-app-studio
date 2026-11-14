@@ -109,7 +109,8 @@ describe('the choice table', () => {
 
   it('lists exactly the options of the own enum of each part, and no prop that is a slot or free text', () => {
     for (const [type, props] of Object.entries(CHOICE_PROPS)) {
-      const shape = getPartDefinition(type)!.props(exampleCtx()).shape;
+      const def = getPartDefinition(type)!;
+      const shape = (def.designProps ?? def.props)(exampleCtx()).shape;
       for (const c of props) {
         expect(Object.hasOwn(shape, c.prop), `${type}.${c.prop}`).toBe(true);
         if (c.kind === 'choice') expect(c.options.map((o) => o.value), `${type}.${c.prop}`).toEqual(enumValues(shape[c.prop]));

@@ -6,7 +6,7 @@ import type { PartDefinition } from '../../../../../src/catalog/types.ts';
 export const ROW_CHILDREN: string[] = [
   'Grid', 'Card', 'Heading', 'Text', 'Divider', 'DataTable', 'RecordForm', 'RecordDetail', 'StatCard', 'RecordList', 'FilterBar',
   'SearchBox', 'ReferencePicker', 'Button', 'Link', 'Row', 'NavLinks', 'Breadcrumb', 'BackLink', 'PageHeader', 'Callout',
-  'Collapsible', 'Chart', 'ProgressBar', 'Timeline', 'Checklist', 'SortControl', 'QuickAdd',
+  'Collapsible', 'Chart', 'ProgressBar', 'Timeline', 'Checklist', 'SortControl', 'QuickAdd', 'GlobalSearch', 'Kanban',
 ];
 
 export const rowDef: PartDefinition = {

@@ -69,6 +69,14 @@ describe('tableFits (B4)', () => {
     expect(tableFits(def('Checklist'), bindOf('Checklist'), 'crews', ctx, false)).toBe(false);
     expect(tableFits(def('ReferencePicker'), bindOf('ReferencePicker'), 'people', ctx, false)).toBe(false);
   });
+  it('needs an editable choice field for a Kanban: Crews has one, People and Tasks do not', () => {
+    const ctx = ctxOf('home');
+    const b = bindOf('Kanban');
+    expect(b).toEqual({ prop: 'source', kind: 'source', mode: 'list' });
+    expect(tableFits(def('Kanban'), b, 'crews', ctx, true)).toBe(true);
+    expect(tableFits(def('Kanban'), b, 'tasks', ctx, false)).toBe(false);
+    expect(tableFits(def('Kanban'), b, 'people', ctx, false)).toBe(false);
+  });
   it('fits anything when no field is required (StatCard)', () => {
     expect(tableFits(def('StatCard'), bindOf('StatCard'), 'people', ctxOf('home'), true)).toBe(true);
   });
@@ -153,6 +161,13 @@ describe('fittingTables', () => {
       i.tables = i.tables?.map((t) => (t.id === 'crews' ? { ...t, fields: t.fields.map((f) => (f.id === 'size' ? { ...f, required: true } : f)) } : t));
     });
     expect(fittingTables(def('QuickAdd'), bindOf('QuickAdd'), partContextFor(s, s.pages[1]), s.tables)).toEqual(['people', 'tasks']);
+  });
+  it('lists only the tables with a choice field for a Kanban, and none when no table has one', () => {
+    expect(fittingTables(def('Kanban'), bindOf('Kanban'), ctxOf('home'), spec.tables)).toEqual(['crews']);
+    const s = specOf((i) => {
+      i.tables = i.tables?.map((t) => ({ ...t, fields: t.fields.filter((f) => f.type !== 'select') }));
+    });
+    expect(fittingTables(def('Kanban'), bindOf('Kanban'), partContextFor(s, s.pages[0]), s.tables)).toEqual([]);
   });
   it('is empty for a Checklist when no table has a yes/no field', () => {
     const s = specOf((i) => {

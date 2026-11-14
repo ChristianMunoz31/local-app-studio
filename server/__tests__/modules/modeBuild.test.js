@@ -144,7 +144,7 @@ describe('web UI build (Vite)', () => {
   it('runtime mode fails the build when Studio code is imported around the seam', async () => {
     await expect(bundleUi('runtime', 'src/studio/pages/PreviewTab.tsx')).rejects.toThrow(/src\/studio\/pages\/PreviewTab\.tsx must not be in a runtime build/);
     await expect(bundleUi('runtime', 'src/catalog/features/index.ts')).rejects.toThrow(/catalog[/]features[/]index[.]ts must not be in a runtime build/);
-    await expect(bundleUi('runtime', 'src/vendor/ui-builder/components/ui/ui-builder/index.tsx')).rejects.toThrow(/must not be in a runtime build/);
+    await expect(bundleUi('runtime', 'src/studio/design/DesignCanvas.tsx')).rejects.toThrow(/must not be in a runtime build/);
   });
 });
 

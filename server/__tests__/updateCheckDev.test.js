@@ -1,5 +1,5 @@
 // Update check per channel: which GitHub endpoint is asked, which releases count, ordering, and the
-// stable path staying exactly as it was. node-fetch is mocked; every request goes through fetchImpl.
+// stable path staying exactly as it was. the fetch seam is mocked; every request goes through fetchImpl.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({ store: new Map() }));
@@ -9,7 +9,7 @@ vi.mock('../../scripts/release/releaseConfig.js', async (importOriginal) => ({
   ...(await importOriginal()),
   RELEASE_CONFIG: Object.freeze({ sourceRepo: 'acme/notes', releasesRepo: 'acme/notes-releases' }),
 }));
-vi.mock('node-fetch', () => ({ default: vi.fn(async () => { throw new Error('real fetch must not be used'); }) }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn(async () => { throw new Error('real fetch must not be used'); }) }));
 vi.mock('../dataAccess.js', () => ({
   getState: vi.fn(async (key, fallback = null) => (h.store.has(key) ? h.store.get(key) : fallback)),
   setState: vi.fn(async (key, value) => {

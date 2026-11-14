@@ -10,7 +10,9 @@ import { cookieFor, newSecret } from './childAuth.js';
 import { buildPreviewEnv } from './childEnv.js';
 import { EXIT_PREVIEW_MIGRATION_FAILED } from '../../db/errors.js';
 import { previewRoot, scratchDirFor } from './paths.js';
-import { prepareScratch, resetScratch } from './scratch.js';
+import { prepareScratch, resetScratch, writeSpecFile } from './scratch.js';
+import { childView } from './swap.js';
+import { startStage } from '../../log.js';
 import { hasStamp, seedSample, writeStamp } from './seed.js';
 import { readSample } from '../sample.js';
 
@@ -52,7 +54,9 @@ function safeReadSample(appId) {
 /**
  * @param {{ rootDir?: string, spawnSpec?: () => { command: string, args: string[] }, spawn?: typeof nodeSpawn,
  *   startTimeoutMs?: number, stopTimeoutMs?: number, readSample?: (appId: string) => object | null, seed?: typeof seedSample,
- *   now?: () => Date }} [opts]
+ *   now?: () => Date, hotSwap?: boolean }} [opts] hotSwap (ADR-019): a save that changes nothing the child reads keeps the
+ *   running child (swap.js) instead of restarting it. Off here so every manager made in a test restarts as before; the process
+ *   manager (getPreviewManager) turns it on
  */
 export function createPreviewManager({
   rootDir = previewRoot(),
@@ -63,9 +67,10 @@ export function createPreviewManager({
   readSample: readSampleFor = safeReadSample,
   seed = seedSample,
   now = () => new Date(),
+  hotSwap = false,
 } = {}) {
   let status = { ...STOPPED };
-  /** @type {{ proc: import('node:child_process').ChildProcess, exited: boolean, stopping: boolean, port: number, cookie: string, done: Promise<void> } | null} */
+  /** @type {{ proc: import('node:child_process').ChildProcess, exited: boolean, stopping: boolean, port: number, cookie: string, done: Promise<void>, view: string | null } | null} */
   let current = null;
   let chain = Promise.resolve();
   let inflight = null;
@@ -126,6 +131,8 @@ export function createPreviewManager({
     let secret;
     let proc;
     let prepared;
+    // What this child reads from its spec (swap.js); null turns the hot swap off for this child.
+    const view = hotSwap ? childView(app.spec) : null;
     try {
       const dir = scratchDirFor(rootDir, app.id);
       prepared = prepareScratch(dir, app.spec, rootDir, { ...opts, deferCommit: true });
@@ -142,7 +149,7 @@ export function createPreviewManager({
     } catch (err) {
       return fail(err?.code ?? err?.name ?? 'unknown', err?.previewUserMessage ? err.message : undefined);
     }
-    const c = { proc, exited: false, stopping: false, port: 0, cookie: '', done: null };
+    const c = { proc, exited: false, stopping: false, port: 0, cookie: '', done: null, view };
     live.add(c);
     c.done = new Promise((resolve) => {
       proc.once('exit', (code) => {
@@ -226,6 +233,37 @@ export function createPreviewManager({
     return { ...status };
   }
 
+  /**
+   * The hot swap (ADR-019): the running child of this app keeps running when the saved spec changes nothing it reads. Only the
+   * spec file in the scratch folder and the status revision move. Any doubt (a start, stop or reset in flight, a child that is
+   * ending, a revision that is not newer, a view that differs or cannot be worked out, a failed write) returns false and the
+   * caller restarts as before. Synchronous, so no start can begin between the checks and the status change.
+   * @param {{ id: string, spec: object, revision: number }} app
+   * @returns {boolean}
+   */
+  function trySwap(app) {
+    const c = current;
+    if (!hotSwap || inflight !== null || status.state !== 'running' || status.appId !== app.id || !c || c.exited || c.stopping || c.view === null) return false;
+    if (!(app.revision > (status.revision ?? 0))) return false;
+    const end = startStage('preview.swap');
+    const next = childView(app.spec);
+    if (next === null || next !== c.view) {
+      end({ outcome: 'restart', reason: next === null ? 'view_unknown' : 'view_changed' });
+      return false;
+    }
+    try {
+      writeSpecFile(scratchDirFor(rootDir, app.id), app.spec, rootDir);
+    } catch (err) {
+      end({ outcome: 'restart', reason: 'write_failed', code: typeof err?.code === 'string' ? err.code : 'unknown' });
+      return false;
+    }
+    // The data note of the last start is about that start; a restart with the same tables would say `unchanged`, so the swap
+    // says the same and the Preview tab drops an old "tables applied" or "cleared" note.
+    setStatus({ revision: app.revision, data: status.data ? { kept: true, reason: 'unchanged' } : status.data });
+    end({ outcome: 'swapped' });
+    return true;
+  }
+
   const manager = {
     /** @param {{ id: string, spec: object, revision: number }} app */
     start(app) {
@@ -306,7 +344,10 @@ export function createPreviewManager({
     target: () => (status.state === 'running' && current ? { port: current.port, cookie: current.cookie } : null),
     /** Restarts (not awaited) when the preview is running or starting this app. */
     specSaved(app) {
-      if ((status.state === 'running' || status.state === 'starting') && status.appId === app.id) manager.start(app).catch(() => {});
+      if ((status.state === 'running' || status.state === 'starting') && status.appId === app.id) {
+        if (trySwap(app)) return;
+        manager.start(app).catch(() => {});
+      }
     },
     /** Stops the preview when it runs this app, then removes the app's scratch folder. Never rejects. */
     async appDeleted(appId) {
@@ -330,6 +371,6 @@ let singleton = null;
 
 /** The process-wide manager (lazy, so importing this module spawns nothing). */
 export function getPreviewManager() {
-  singleton ??= createPreviewManager();
+  singleton ??= createPreviewManager({ hotSwap: true });
   return singleton;
 }

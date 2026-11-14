@@ -9,6 +9,7 @@ import { nowIso } from './codec.js';
 import { chmodBestEffort } from '../paths.js';
 import { envDir } from '../runtime.js';
 import { BUNDLED_APP_MODE, getAppMode } from '../appMode.js';
+import { ftsTablesIn } from '../spec/fts.js';
 import { getCompiledSpec } from '../spec/source.js';
 
 export const MIGRATIONS_DIR = envDir('APP_MIGRATIONS_DIR') ?? fileURLToPath(new URL('./migrations/', import.meta.url));
@@ -164,14 +165,7 @@ export function sha256Text(text) {
   return crypto.createHash('sha256').update(text.replace(/\r\n/g, '\n')).digest('hex');
 }
 
-/**
- * Reads the app-track migrations. Studio mode has none. With no files in the folder and a compiled spec, the single
- * in-memory migration 1 is the spec's createSql (preview child, `npm start` with a baked spec, tests).
- * @param {{ dir?: string, mode?: 'studio' | 'runtime', compiled?: { createSql: string } | null }} [opts]
- * @returns {Array<{ version: number, name: string, sql: string, sha256: string }>}
- */
-export function loadAppMigrations({ dir = APP_MIGRATIONS_DIR, mode = getAppMode(), compiled } = {}) {
-  if (mode !== 'runtime') return [];
+function appMigrationFiles(dir) {
   let names;
   try {
     names = fs.readdirSync(dir);
@@ -183,6 +177,42 @@ export function loadAppMigrations({ dir = APP_MIGRATIONS_DIR, mode = getAppMode(
     const m = FILE_RE.exec(file);
     if (m) found.push({ version: Number(m[1]), name: m[2], file });
   }
+  return found;
+}
+
+/**
+ * The derived index statements (ADR-014) a runtime start with no app-migration files applies after the migrations: the
+ * compiled spec's `indexSql`, else ''. A folder with migration files gets its indexes from the plans in those files.
+ * @param {{ dir?: string, mode?: 'studio' | 'runtime', compiled?: { indexSql?: string } | null }} [opts]
+ * @returns {string}
+ */
+export function loadDerivedIndexSql({ dir = APP_MIGRATIONS_DIR, mode = getAppMode(), compiled } = {}) {
+  if (mode !== 'runtime' || appMigrationFiles(dir).length > 0) return '';
+  const spec = compiled === undefined ? getCompiledSpec() : compiled;
+  return typeof spec?.indexSql === 'string' ? spec.indexSql : '';
+}
+
+/**
+ * The full text index statements (ADR-016) a runtime start with no app-migration files applies after the derived indexes:
+ * the compiled spec's `ftsSql`, else ''. Same rule as loadDerivedIndexSql.
+ * @param {{ dir?: string, mode?: 'studio' | 'runtime', compiled?: { ftsSql?: string } | null }} [opts]
+ * @returns {string}
+ */
+export function loadFtsSql({ dir = APP_MIGRATIONS_DIR, mode = getAppMode(), compiled } = {}) {
+  if (mode !== 'runtime' || appMigrationFiles(dir).length > 0) return '';
+  const spec = compiled === undefined ? getCompiledSpec() : compiled;
+  return typeof spec?.ftsSql === 'string' ? spec.ftsSql : '';
+}
+
+/**
+ * Reads the app-track migrations. Studio mode has none. With no files in the folder and a compiled spec, the single
+ * in-memory migration 1 is the spec's createSql (preview child, `npm start` with a baked spec, tests).
+ * @param {{ dir?: string, mode?: 'studio' | 'runtime', compiled?: { createSql: string } | null }} [opts]
+ * @returns {Array<{ version: number, name: string, sql: string, sha256: string }>}
+ */
+export function loadAppMigrations({ dir = APP_MIGRATIONS_DIR, mode = getAppMode(), compiled } = {}) {
+  if (mode !== 'runtime') return [];
+  const found = appMigrationFiles(dir);
   if (found.length === 0) {
     const spec = compiled === undefined ? getCompiledSpec() : compiled;
     if (!spec) return [];
@@ -302,16 +332,82 @@ export function migrateApp(db, { migrations = loadAppMigrations(), filename, upT
 }
 
 /**
+ * Applies the derived indexes (ADR-014) of a runtime start with no app-migration files. They are CREATE INDEX IF NOT
+ * EXISTS, so the step is idempotent and never recorded in app_schema_version: migration 1 stays byte-identical to the
+ * createSql an older compiler recorded, and a later spec change cannot make a recorded version mismatch. It runs after the
+ * migrations (and after their pre-migration backup) in one transaction, so a failure leaves no half set of indexes.
+ * @param {import('node:sqlite').DatabaseSync} db
+ * @param {string} sql
+ * @returns {void}
+ */
+export function applyDerivedIndexes(db, sql) {
+  if (typeof sql !== 'string' || sql === '') return;
+  try {
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec(sql);
+      db.exec('COMMIT');
+    } catch (cause) {
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        // already rolled back by SQLite
+      }
+      throw cause;
+    }
+  } catch (cause) {
+    throw new DbError('migration_failed', 'Derived indexes could not be created', { cause });
+  }
+}
+
+/**
+ * Applies the full text indexes (ADR-016) of a runtime start with no app-migration files: the idempotent `ftsSql`, then a
+ * `rebuild` of exactly the indexes this call created (an external content index created on a table that already holds rows
+ * is empty until it is rebuilt). An index that already existed is never rebuilt, so a start after the first one does nothing.
+ * Like applyDerivedIndexes it is never recorded as a migration version and runs in one transaction.
+ * @param {import('node:sqlite').DatabaseSync} db
+ * @param {string} sql the compiled spec's ftsSql
+ * @returns {string[]} the names of the indexes it created and filled
+ */
+export function applyFtsIndexes(db, sql) {
+  if (typeof sql !== 'string' || sql === '') return [];
+  const exists = db.prepare("SELECT 1 AS x FROM sqlite_master WHERE type = 'table' AND name = ?");
+  const created = ftsTablesIn(sql).filter((name) => !exists.get(name));
+  try {
+    db.exec('BEGIN IMMEDIATE');
+    try {
+      db.exec(sql);
+      for (const name of created) db.exec(`INSERT INTO "${name.replaceAll('"', '""')}"("${name.replaceAll('"', '""')}") VALUES('rebuild');`);
+      db.exec('COMMIT');
+    } catch (cause) {
+      try {
+        db.exec('ROLLBACK');
+      } catch {
+        // already rolled back by SQLite
+      }
+      throw cause;
+    }
+  } catch (cause) {
+    throw new DbError('migration_failed', 'Full text indexes could not be created', { cause });
+  }
+  return created;
+}
+
+/**
  * Runs the core track, then the app track. Returns the core result only.
  * @param {import('node:sqlite').DatabaseSync} db
- * @param {{ migrations?: Array<{ version: number, name: string, sql: string }>, appMigrations?: Array<{ version: number, name: string, sql: string, sha256: string }>, appVersion?: number, filename?: string }} [opts]
+ * @param {{ migrations?: Array<{ version: number, name: string, sql: string }>, appMigrations?: Array<{ version: number, name: string, sql: string, sha256: string }>, appVersion?: number, filename?: string, derivedIndexSql?: string, ftsSql?: string }} [opts]
+ * `derivedIndexSql` and `ftsSql` default to the compiled spec's when the app migrations are not passed in, else to none.
  * @returns {{ from: number, to: number, applied: number[] }}
  */
-export function migrate(db, { migrations, appMigrations, appVersion, filename } = {}) {
+export function migrate(db, { migrations, appMigrations, appVersion, filename, derivedIndexSql, ftsSql } = {}) {
   const run = () => {
     const endTotal = startStage('migrate.total');
     const result = migrateCore(db, { migrations, filename });
     const app = migrateApp(db, { migrations: appMigrations, filename, upTo: appVersion });
+    const indexes = derivedIndexSql ?? (appMigrations === undefined && appVersion === undefined ? loadDerivedIndexSql() : '');
+    if (indexes !== '') applyDerivedIndexes(db, indexes);
+    applyFtsIndexes(db, ftsSql ?? (appMigrations === undefined && appVersion === undefined ? loadFtsSql() : ''));
     endTotal({ applied: result.applied.length + app.applied.length });
     return result;
   };

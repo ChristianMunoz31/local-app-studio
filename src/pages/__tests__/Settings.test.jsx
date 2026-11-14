@@ -437,6 +437,23 @@ describe('Connected services section', () => {
   });
 });
 
+describe('Lazy AI and Connected services sections', () => {
+  it('show their cards with the anchor and focusable heading once the lazy chunks have loaded', async () => {
+    renderSettings();
+    expect(await screen.findByText('Saved in settings')).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByText('Loading this section.')).not.toBeInTheDocument());
+    for (const [id, name] of [
+      ['ai', 'AI'],
+      ['api-keys', 'Connected services'],
+    ]) {
+      const heading = screen.getByRole('heading', { name });
+      expect(heading).toHaveAttribute('id', `${id}-heading`);
+      expect(heading).toHaveAttribute('tabindex', '-1');
+      expect(heading.closest(`[id="${id}"]`)).not.toBeNull();
+    }
+  });
+});
+
 describe('Settings page static hints', () => {
   it('shows the global reset hint about AI models and connected services', async () => {
     await mountSettings();

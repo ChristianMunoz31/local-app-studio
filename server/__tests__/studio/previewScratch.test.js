@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
-import { compileSpec } from '../../spec/compile.js';
+import { compileSpec, planMigration } from '../../spec/compile.js';
 import { starterSpec } from '../../studio/specCheck.js';
 import { RESETTABLE, prepareScratch, resetScratch } from '../../studio/preview/scratch.js';
 
@@ -63,13 +63,35 @@ describe('prepareScratch', () => {
     expect(fs.existsSync(marker)).toBe(false);
   });
 
+  it('keeps a legacy state written with the base createSql hash when the spec has a sorted List (ADR-014)', () => {
+    const spec = JSON.parse(fs.readFileSync(new URL('../../../packages/runtime/src/spec/fixtures/crew-roster.json', import.meta.url), 'utf8'));
+    expect(compileSpec(spec).indexSql).toContain('CREATE INDEX IF NOT EXISTS');
+    // createSql is byte-identical to the compiler before derived indexes: its golden file is the base text.
+    const base = fs.readFileSync(new URL('../spec/golden/crew-roster.create.sql', import.meta.url), 'utf8').replaceAll('\r\n', '\n');
+    const sha = (t) => crypto.createHash('sha256').update(t).digest('hex');
+    expect(compileSpec(spec).createSql.replaceAll('\r\n', '\n')).toBe(base);
+    const first = prepareScratch(dir, spec, root);
+    // a fresh chain goes through the first build plan, which carries the derived and the full text indexes
+    expect(fs.readFileSync(path.join(first.appMigrationsDir, '001_app.sql'), 'utf8')).toContain('CREATE INDEX IF NOT EXISTS "idx:crews:name"');
+    const marker = path.join(first.dataDir, 'app.db');
+    const statePath = path.join(dir, 'preview-state.json');
+    const v2 = JSON.parse(fs.readFileSync(statePath, 'utf8'));
+    fs.rmSync(path.join(dir, 'applied-spec.json'));
+    fs.writeFileSync(statePath, JSON.stringify({ tablesHash: v2.tablesHash, createSqlHash: sha(base) }));
+    fs.writeFileSync(marker, 'data');
+    expect(prepareScratch(dir, spec, root).data).toEqual({ kept: true, reason: 'unchanged' });
+    expect(fs.existsSync(marker)).toBe(true);
+  });
+
   it('writes the compiled 001_app.sql (LF) and its lock', () => {
     const spec = withTable(starterSpec('Crew Roster', 'crew-roster'));
     const out = prepareScratch(dir, spec, root);
     const sql = fs.readFileSync(path.join(out.appMigrationsDir, '001_app.sql'), 'utf8');
     const lock = JSON.parse(fs.readFileSync(path.join(out.appMigrationsDir, 'migrations.lock.json'), 'utf8'));
-    expect(sql).toBe(compileSpec(spec).createSql.replaceAll('\r\n', '\n'));
+    // a fresh chain starts from the first build plan: createSql plus the derived and the full text indexes (ADR-014, ADR-016)
+    expect(sql).toBe(planMigration(null, spec).file.sql.replaceAll('\r\n', '\n'));
     expect(sql).toContain('crews');
+    expect(sql).toContain('CREATE VIRTUAL TABLE "fts:crews"');
     expect(lock['001_app.sql']).toBe(crypto.createHash('sha256').update(sql).digest('hex'));
   });
 

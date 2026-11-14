@@ -13,6 +13,34 @@ const PAUSED = 'Automatic backups are paused on this computer right now.';
 /** True when the user turned automatic backups off (an older status without the field says nothing). */
 const switchedOff = (status) => status?.autoSwitch === false;
 
+const COPY_WARNING = 'Copies to your second backup folder are failing. Backups on this PC are fine.';
+const COPY_REASONS = {
+  copy_folder_missing: 'the folder was not found',
+  copy_not_writable: 'the folder is read-only or not allowed',
+  copy_disk_full: 'the drive is full',
+  copy_locked: 'a file there is in use',
+  copy_verify_failed: 'the copy did not match the backup',
+  copy_timeout: 'it took too long',
+  copy_stuck: 'the copy is stuck',
+  copy_folder_inside_data: 'the folder is inside the data folder',
+  copy_app_folder: "the folder holds another app's data",
+};
+
+/** Status sentence for the second backup folder (secondCopy from the server), or '' when it is off. */
+export function secondCopySentence(copy, now = new Date()) {
+  if (!copy || !copy.enabled || copy.health === 'off') return '';
+  if (copy.health === 'failing') {
+    const when = formatBackupDate(copy.lastFailureAt, now);
+    const reason = COPY_REASONS[copy.lastError] ?? 'something went wrong';
+    // A stuck copy never retries by itself: only a restart frees it.
+    const next = copy.lastError === 'copy_stuck' ? `Restart ${PRODUCT_NAME} to try again.` : 'It will try again within the hour.';
+    return `The last copy to the second folder failed${when ? ` at ${when}` : ''}: ${reason}. The backup on this PC is fine. ${next}`;
+  }
+  if (copy.health === 'pending') return 'Copying to the second folder.';
+  const when = formatBackupDate(copy.lastSuccessAt, now);
+  return when ? `Last copied to the second folder: ${when}.` : 'Nothing copied yet.';
+}
+
 /** Plain-language sentence for a BackupStatus. Exported for the Settings line and tests. */
 export function statusSentence(status, now = new Date()) {
   if (!status) return '';
@@ -57,6 +85,12 @@ export function autoOffSentence(status, now = new Date()) {
  * (autoOffSentence); failures, recovery and low disk space still speak up.
  */
 export function noticeSentence(status, now = new Date()) {
+  const base = backupNotice(status, now);
+  if (!status || status.restoring === true || status.recoveryRequired === true) return base;
+  return status.secondCopy?.health === 'failing' ? [base, COPY_WARNING].filter(Boolean).join(' ') : base;
+}
+
+function backupNotice(status, now) {
   if (!status || status.restoring === true) return '';
   if (status.recoveryRequired === true) return RECOVERY_REQUIRED;
   if (status.health === 'ok') return status.diskWarning ? DISK_LOW : '';

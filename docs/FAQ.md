@@ -11,6 +11,9 @@ No. There is no account and no telemetry. Everything runs on the user's computer
 **Where does the app keep its data?**
 In `%APPDATA%\Local App Studio` on Windows (`app.db`, `backups/` and a few small files). The folder is kept when the app is updated, reinstalled or uninstalled. See [ARCHITECTURE.md](ARCHITECTURE.md#data-folder).
 
+**Can two people, or two PCs, use the same data?**
+No. The app is for one PC and one user at a time. Never put the data folder or `app.db` in a synced or shared folder (OneDrive, Dropbox, a network share): SQLite with its WAL files can be corrupted by sync or file sharing. To get copies off the PC, use the second backup location (Settings > Data & storage > Backups, "Also copy each new backup to") or **Export all data**.
+
 **Where is the log?**
 `%LOCALAPPDATA%\com.neuralfoundry.localappstudio\logs\server.log`. It holds the server's stdout and stderr, is replaced at each launch, and does not hold the user's own content. If the app fails to start, the error page shows this path.
 

@@ -1,8 +1,12 @@
-import { btnSecondary } from '../../../../../src/components/shared/formStyles.js';
+import { useState } from 'react';
 import type { Action } from '../../../../../src/catalog/actions.ts';
-import { fieldInfo, useSource, useSourceInfo, useTableDef } from '../../../../../src/catalog/context.tsx';
+import { fieldInfo, useIsLive, useSource, useSourceInfo, useTableDef } from '../../../../../src/catalog/context.tsx';
+import { isNumbered } from '../../spec/autoNumber.ts';
 import { useCellText } from './cells.ts';
+import { EditableCell } from './EditableCell.tsx';
+import { titleFieldOf } from './format.ts';
 import { EmptyLine, ErrorLine, LoadingLines, Notice } from './DataState.tsx';
+import { Pager } from './Pager.tsx';
 import { useNoticeAction } from './useNoticeAction.ts';
 import { editorDomProps } from './editorProps.ts';
 import type { EditorProps } from './editorProps.ts';
@@ -14,17 +18,31 @@ export interface DataTableProps extends EditorProps {
   rowAction?: Action;
   pageSize?: 10 | 25 | 50;
   emptyText?: string;
+  /** Design only (ADR-017): `cells` lets a person click a cell to edit it. Absent means off. */
+  edit?: 'off' | 'cells';
 }
 
 /** The rows of a list source as a table: up to 8 columns, paged, with an optional action when a row is clicked. */
-export function DataTable({ source = '', columns, rowAction, pageSize = 25, emptyText, ...rest }: DataTableProps) {
+export function DataTable({ source = '', columns, rowAction, pageSize = 25, emptyText, edit, ...rest }: DataTableProps) {
   const { className, ...dom } = editorDomProps(rest);
   const info = useSourceInfo(source);
   const table = useTableDef(info?.table ?? null);
   const { rows, total, loading, error, offset, setOffset } = useSource(source, { limit: pageSize });
   const { run, notice } = useNoticeAction();
   const ids = (columns ?? table?.fields.slice(0, 5).map((f) => f.id) ?? []).filter((id) => fieldInfo(table, id) !== null);
-  const cellText = useCellText(table, rows, ids);
+  const live = useIsLive();
+  const editOn = edit === 'cells' && live;
+  const titleId = table ? titleFieldOf(table) : 'id';
+  const cellText = useCellText(table, rows, editOn && !ids.includes(titleId) ? [...ids, titleId] : ids);
+  // The line under the table is the most recent message: a row action's refusal or a finished save. Opening a cell drops the last
+  // "Saved." so an identical next one changes the text and is announced again.
+  const [saved, setSaved] = useState<string | null>(null);
+  const [latest, setLatest] = useState<'notice' | 'saved'>('notice');
+  const runRow = (action: Action, current: { table: string; id: string }): void => {
+    setSaved(null);
+    setLatest('notice');
+    run(action, current);
+  };
 
   let body;
   if (!info || !table) {
@@ -61,13 +79,17 @@ export function DataTable({ source = '', columns, rowAction, pageSize = 25, empt
               <tr
                 key={String(row.id ?? r)}
                 className={cx('border-t border-[color:var(--glass-border)]', rowAction && 'cursor-pointer hover:bg-slate-slate700/30')}
-                onClick={rowAction ? () => run(rowAction, { table: info.table, id: String(row.id) }) : undefined}
+                onClick={rowAction ? () => runRow(rowAction, { table: info.table, id: String(row.id) }) : undefined}
               >
                 {ids.map((id, c) => {
                   const text = cellText(row, id) || '-';
+                  // A real, typed, non-numbered field; not the first column of a clickable row (that button runs the row action).
+                  const editable = editOn && info && !(rowAction && c === 0) ? table.fields.find((f) => f.id === id && !isNumbered(f)) : undefined;
                   return (
                     <td key={id} className="py-2 pr-3 text-slate-slate100">
-                      {rowAction && c === 0 ? (
+                      {editable && info ? (
+                        <EditableCell table={info.table} field={editable} row={row} text={text} rowName={cellText(row, titleId) || String(row.id)} onSaved={(words) => { setSaved(words); setLatest('saved'); }} onOpen={() => setSaved(null)} />
+                      ) : rowAction && c === 0 ? (
                         <button type="button" className="text-left font-semibold focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-slate-brandLight">
                           {text}
                         </button>
@@ -88,22 +110,8 @@ export function DataTable({ source = '', columns, rowAction, pageSize = 25, empt
   return (
     <div {...dom} className={cx('space-y-2', className)}>
       {body}
-      {info && total > pageSize && (
-        <div className="flex items-center justify-between gap-2 text-xs text-slate-slate400">
-          <span>
-            {offset + 1} to {offset + rows.length} of {total}
-          </span>
-          <span className="flex gap-2">
-            <button type="button" className={btnSecondary} disabled={offset === 0 || loading} onClick={() => setOffset(Math.max(0, offset - pageSize))}>
-              Previous
-            </button>
-            <button type="button" className={btnSecondary} disabled={offset + pageSize >= total || loading} onClick={() => setOffset(offset + pageSize)}>
-              Next
-            </button>
-          </span>
-        </div>
-      )}
-      <Notice text={notice} />
+      {info && table && <Pager label={table.label} offset={offset} count={rows.length} total={total} pageSize={pageSize} loading={loading} setOffset={setOffset} />}
+      <Notice text={latest === 'saved' ? saved : notice} />
     </div>
   );
 }

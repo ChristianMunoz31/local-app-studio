@@ -228,3 +228,66 @@ describe('DataBrowserPage', () => {
     expect(screen.getByLabelText('Export file (.zip)')).toBeTruthy();
   });
 });
+
+describe('DataTablePage Download CSV', () => {
+  const stubDownload = (response) => {
+    const fetchMock = vi.fn(async () => response);
+    vi.stubGlobal('fetch', fetchMock);
+    URL.createObjectURL = vi.fn(() => 'blob:x');
+    URL.revokeObjectURL = vi.fn();
+    return fetchMock;
+  };
+
+  it('posts one table with format csv, saves the file and says it is ready', async () => {
+    const headers = { 'Content-Disposition': 'attachment; filename="local-app-studio-crews-1.csv"', 'X-Export-Complete': '1' };
+    const fetchMock = stubDownload(new Response('id\r\n', { status: 200, headers }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    renderTable(fakeSource());
+    await screen.findByText('Crew 1');
+    expect(screen.getByRole('button', { name: 'Export this table' })).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    expect(await screen.findByText('Export ready. Check your downloads.')).toBeTruthy();
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/export');
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ tables: ['crews'], format: 'csv' });
+    expect(click).toHaveBeenCalledTimes(1);
+    click.mockRestore();
+  });
+
+  it('shows a plain error and saves nothing when the download fails', async () => {
+    stubDownload(new Response(JSON.stringify({ error: 'x', code: 'export_too_large' }), { status: 413 }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    renderTable(fakeSource());
+    await screen.findByText('Crew 1');
+    fireEvent.click(screen.getByRole('button', { name: 'Download CSV' }));
+    const alert = await screen.findByRole('alert');
+    expect(alert.textContent).toContain('too large to export');
+    expect(click).not.toHaveBeenCalled();
+    click.mockRestore();
+  });
+
+  it('keeps Export this table posting without a format', async () => {
+    const fetchMock = stubDownload(new Response('zip', { status: 200, headers: { 'X-Export-Complete': '1' } }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    renderTable(fakeSource());
+    await screen.findByText('Crew 1');
+    fireEvent.click(screen.getByRole('button', { name: 'Export this table' }));
+    await screen.findByText('Export ready. Check your downloads.');
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ tables: ['crews'] });
+    click.mockRestore();
+  });
+
+  it.each([
+    ['Download CSV', 'csv'],
+    ['Export this table', 'zip'],
+  ])('%s: says the file is incomplete, not ready, when X-Export-Complete is 0 (%s)', async (label) => {
+    stubDownload(new Response('id', { status: 200, headers: { 'Content-Disposition': 'attachment; filename="x.csv"', 'X-Export-Complete': '0' } }));
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    renderTable(fakeSource());
+    await screen.findByText('Crew 1');
+    fireEvent.click(screen.getByRole('button', { name: label }));
+    const note = await screen.findByRole('alert');
+    expect(note.textContent).toContain('incomplete');
+    expect(screen.queryByText('Export ready. Check your downloads.')).toBeNull();
+    click.mockRestore();
+  });
+});

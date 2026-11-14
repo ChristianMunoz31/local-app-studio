@@ -42,6 +42,8 @@ export const TEXT_PROPS: Readonly<Record<string, readonly string[]>> = Object.fr
   Checklist: ['emptyText'],
   SortControl: ['label'],
   QuickAdd: ['placeholder', 'buttonLabel'],
+  GlobalSearch: ['placeholder'],
+  Kanban: ['emptyText'],
 });
 
 const isPlain = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);

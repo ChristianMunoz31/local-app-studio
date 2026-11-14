@@ -1,8 +1,8 @@
 // Loopback-only AI: with default settings every outbound call the AI layer makes goes to
-// 127.0.0.1 / localhost / ::1. Guarded at three levels: the mocked node-fetch the AI module uses,
+// 127.0.0.1 / localhost / ::1. Guarded at three levels: the mocked fetch seam the AI module uses,
 // a stubbed globalThis.fetch, and spies on net/tls/https connection primitives. A cloud provider
 // that is configured but not opted in, and a LAN Ollama host without the aiLan opt-in, must make
-// zero non-loopback requests. No real Ollama is ever needed (fake behind node-fetch).
+// zero non-loopback requests. No real Ollama is ever needed (fake behind the fetch seam).
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PUBLIC_BUILD } from './helpers/proBuild.js';
 // Pro is on for this file (the Pro gate itself is covered in proGating.test.js).
@@ -13,9 +13,9 @@ import tls from 'node:tls';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { installFakeOllama, textReply, toolReply } from './helpers/fakeOllama.js';
 import { __resetAiForTests } from '../ai/index.js';
 import { AI_SETTINGS_KEY } from '../ai/settings.js';
@@ -50,7 +50,7 @@ function socketHost(args) {
 /** Hosts of every outbound attempt seen by any guard, tagged by layer. */
 function seen() {
   const out = [];
-  for (const [u] of fetch.mock.calls) out.push({ via: 'node-fetch', host: hostOf(u), url: String(u) });
+  for (const [u] of fetch.mock.calls) out.push({ via: 'fetch-seam', host: hostOf(u), url: String(u) });
   for (const [u] of globalFetchStub.mock.calls) out.push({ via: 'global-fetch', host: hostOf(typeof u === 'string' ? u : (u?.url ?? u)), url: String(u) });
   for (const args of connectSpy.mock.calls) {
     const host = socketHost(args);

@@ -1,4 +1,4 @@
-// A fake Ollama for tests: install it on a mocked node-fetch (vi.mock('node-fetch')).
+// A fake Ollama for tests: install it on a mocked fetch seam (vi.mock('../../net/fetch.js')).
 // Answers /api/version, /api/tags, /api/show, /api/chat and /api/pull (NDJSON, split into small chunks
 // so line reassembly is exercised). Records every URL so tests can assert loopback-only use.
 import { Readable } from 'node:stream';

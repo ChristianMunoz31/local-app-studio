@@ -16,6 +16,7 @@ const RETRY_CODES = new Set(['EPERM', 'EBUSY', 'EACCES']);
  * @property {typeof fsp.readFile} readFile
  * @property {typeof fsp.readdir} readdir
  * @property {typeof fsp.lstat} lstat
+ * @property {typeof fsp.stat} stat
  * @property {typeof fsp.realpath} realpath
  * @property {typeof fsp.mkdir} mkdir
  * @property {(ms: number) => Promise<void>} sleep
@@ -36,6 +37,7 @@ export function createFsOps(overrides = {}) {
     readFile: fsp.readFile,
     readdir: fsp.readdir,
     lstat: fsp.lstat,
+    stat: fsp.stat,
     realpath: fsp.realpath,
     mkdir: fsp.mkdir,
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),

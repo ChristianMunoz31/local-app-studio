@@ -6,6 +6,10 @@ Under the hood it is a Tauri v2 shell around a Node (Express) server and a React
 
 Only Windows is tested. macOS and Linux are untested, so this project makes no claim about them.
 
+## One PC, one user
+
+The app is for one PC and one user at a time. The desktop app listens only on a loopback address on that PC. Never put the data folder or `app.db` in a synced or shared folder (OneDrive, Dropbox, a network share): SQLite keeps extra files beside `app.db` (WAL files), and sync or file sharing can corrupt them. To get copies off the PC, use the second backup location (Settings > Data & storage > Backups, "Also copy each new backup to") or **Export all data**.
+
 ## Screenshots
 
 ![Design: placing parts on a page](docs/images/studio-design.png)

@@ -9,6 +9,7 @@ import { cannedDescribeChat } from '../../scripts/lib/fakeDescribeAnswers.js';
 import { builder } from '../pages/builder.js';
 import { PUBLIC_BUILD } from '../support/proBuild.js';
 import { expectStartCard, openStartBox } from '../pages/apps.js';
+import { openBoardPreview } from '../support/boardApps.js';
 
 export const AA = 4.5;
 export const BASE = { light: [255, 255, 255], dark: [24, 22, 20] };
@@ -210,6 +211,25 @@ export function setupStudio() {
     { name: 'build', group: 'steps', title: 'Build, Crew Roster, Local App Studio', open: async (page) => {
         await page.goto(path('build'));
         await expect(page.getByRole('switch', { name: 'Allow downloads for builds' })).toBeVisible();
+      } },
+    // The phase 31 parts in a running Preview (group "parts", its own shard: three Preview starts per theme). Each screen imports its small
+    // synthetic app through the Studio API on first use (e2e/support/boardApps.js), so the shared setup and the other shards do not see it.
+    { name: 'preview kanban board with the move menu open', group: 'parts', open: async (page) => {
+        const scope = await openBoardPreview(page, 'kanban');
+        await expect(scope.getByRole('region', { name: 'todo', exact: true })).toBeVisible();
+        await scope.getByRole('button', { name: 'Move Alpha' }).click();
+        await expect(scope.getByRole('menu', { name: 'Move Alpha to' })).toBeVisible();
+      } },
+    { name: 'preview global search with results open', group: 'parts', open: async (page) => {
+        const scope = await openBoardPreview(page, 'search');
+        await scope.getByRole('combobox', { name: 'Search the board' }).fill('alp');
+        await expect(scope.getByText('3 results in 2 tables', { exact: true })).toBeVisible();
+        await expect(scope.getByRole('option', { name: 'Alpha', exact: true })).toBeVisible();
+      } },
+    { name: 'preview table in inline edit with a cell open', group: 'parts', open: async (page) => {
+        const scope = await openBoardPreview(page, 'table');
+        await scope.getByRole('button', { name: 'Edit Size of Alpha' }).click();
+        await expect(scope.getByLabel('Size of Alpha', { exact: true })).toBeFocused();
       } },
     { name: 'delete app confirm', group: 'apps', open: async (page) => {
         await page.goto('/apps');

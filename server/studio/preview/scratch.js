@@ -142,6 +142,7 @@ export function prepareScratch(dir, spec, rootDir = previewRoot(), opts = {}) {
   const statePath = path.join(base, 'preview-state.json');
   const appliedPath = path.join(base, 'applied-spec.json');
   fs.mkdirSync(base, { recursive: true });
+  removeStaleSpecTemps(base);
 
   const tablesHash = sha256(stableJson(spec.tables));
   const createSql = () => compileSpec(spec).createSql.replaceAll('\r\n', '\n');
@@ -181,7 +182,10 @@ export function prepareScratch(dir, spec, rootDir = previewRoot(), opts = {}) {
   const startFresh = (reason) => {
     fs.rmSync(dataDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
     fs.rmSync(migrationsDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 50 });
-    entries = [['001_app.sql', createSql()]];
+    // The first build plan is createSql plus the derived indexes (ADR-014) and the full text indexes (ADR-016); createSql alone is what a legacy state hashed.
+    const first = planMigration(null, spec);
+    const sql = first.ok && first.file ? first.file.sql.replaceAll('\r\n', '\n') : createSql();
+    entries = [['001_app.sql', sql]];
     files = ['001_app.sql'];
     data = { kept: false, reason };
   };
@@ -212,7 +216,8 @@ export function prepareScratch(dir, spec, rootDir = previewRoot(), opts = {}) {
       startFresh('tables_replaced');
     }
   } else if (state && state.v === undefined && typeof state.tablesHash === 'string') {
-    // Phase 9 state: the kept database was built from this create SQL when both hashes still match.
+    // Phase 9 state: the kept database was built from this create SQL when both hashes still match. createSql stays
+    // byte-identical across compiler versions (the derived indexes are in indexSql), so this hash keeps matching.
     const sql = createSql();
     if (state.tablesHash === tablesHash && state.createSqlHash === sha256(sql)) {
       entries = [['001_app.sql', sql]];
@@ -243,6 +248,54 @@ export function prepareScratch(dir, spec, rootDir = previewRoot(), opts = {}) {
   };
   if (!deferred) commit();
   return { specPath, dataDir, appMigrationsDir: migrationsDir, data, migrated, commit };
+}
+
+const TMP_SUFFIX = '.tmp';
+/** Windows refuses to replace a file another handle holds for a moment (a virus scanner, the indexer, the backup worker). */
+const BUSY_CODES = new Set(['EPERM', 'EACCES', 'EBUSY']);
+const RENAME_TRIES = 3;
+const RENAME_WAIT_MS = 20;
+
+function renameWithRetry(from, to) {
+  for (let attempt = 1; ; attempt += 1) {
+    try {
+      fs.renameSync(from, to);
+      return;
+    } catch (err) {
+      if (attempt >= RENAME_TRIES || !BUSY_CODES.has(err?.code)) throw err;
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, RENAME_WAIT_MS);
+    }
+  }
+}
+
+/** Removes temp spec files a write left behind when Studio stopped between the write and the rename. */
+function removeStaleSpecTemps(base) {
+  for (const name of fs.readdirSync(base)) {
+    if (name.startsWith('app-spec.json.') && name.endsWith(TMP_SUFFIX)) fs.rmSync(path.join(base, name), { force: true });
+  }
+}
+
+/**
+ * Rewrites only `app-spec.json` of a scratch folder (the hot swap, ADR-019): safe while the child runs, because the child read
+ * its spec at start and nothing in its view changed. The chain, the state and the data are not touched. The text goes to a temp
+ * file in the same folder first and is renamed over the old file, so a reader (a restart, the child's backup worker) sees the
+ * old spec or the new one, never a part of either. On any failure the temp file is removed and the error is thrown, and the old
+ * file is still whole (the caller then restarts the child, which writes the file again).
+ * @param {string} dir the app's scratch folder
+ * @param {object} spec a checked spec
+ * @param {string} [rootDir]
+ */
+export function writeSpecFile(dir, spec, rootDir = previewRoot()) {
+  const base = checkedBase(dir, rootDir);
+  const specPath = path.join(base, 'app-spec.json');
+  const tmp = `${specPath}.${process.pid}.${crypto.randomBytes(4).toString('hex')}${TMP_SUFFIX}`;
+  try {
+    fs.writeFileSync(tmp, JSON.stringify(spec), { flag: 'wx' });
+    renameWithRetry(tmp, specPath);
+  } catch (err) {
+    fs.rmSync(tmp, { force: true });
+    throw err;
+  }
 }
 
 /**

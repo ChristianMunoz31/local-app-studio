@@ -13,14 +13,14 @@ const codes = (root: LayoutLayer, ctx = SPIKE_PART_CONTEXT) => check(root, ctx).
 const PART_LIST = PART_NAMES.join(', ');
 
 describe('the catalog', () => {
-  it('lists the 34 parts in catalog order', () => {
+  it('lists the 36 parts in catalog order', () => {
     expect(PART_NAMES).toEqual([
       'Page', 'Section', 'Grid', 'Card', 'Tabs', 'Tab', 'Heading', 'Text', 'Divider', 'DataTable', 'RecordForm', 'RecordDetail',
       'StatCard', 'RecordList', 'FilterBar', 'SearchBox', 'ReferencePicker', 'Button', 'Link', 'Columns', 'Column', 'Row', 'NavLinks',
       'Breadcrumb', 'BackLink', 'PageHeader', 'Callout', 'Collapsible', 'Chart', 'ProgressBar', 'Timeline', 'Checklist', 'SortControl',
-      'QuickAdd',
+      'QuickAdd', 'GlobalSearch', 'Kanban',
     ]);
-    expect(PART_NAMES).toHaveLength(34);
+    expect(PART_NAMES).toHaveLength(36);
     expect(PART_NAMES).not.toContain('ExportButton');
     expect(getPartDefinition('Heading')?.group).toBe('layout');
     expect(getPartDefinition('DataTable')?.group).toBe('data');
@@ -478,5 +478,20 @@ describe('cross-prop rules and child counts of the new parts', () => {
     expect(codes(page(layer('c', 'Checklist', { source: 'open_tasks', field: 'nope' })), ctx)).toEqual(['unknown_field']);
     expect(codes(page(layer('q', 'QuickAdd', { table: 'crews', field: 'size' })), ctx)).toEqual(['wrong_field_type']);
     expect(codes(page(layer('t', 'Timeline', { source: 'one_crew', dateField: 'created_at' })), ctx)).toEqual(['wrong_source_mode']);
+  });
+
+  it('binding checks: Kanban takes a list source and an editable choice field of its table, and refuses anything else', () => {
+    const good = layer('k', 'Kanban', { source: 'open_crews', field: 'status', titleField: 'name', subtitleField: 'size', emptyText: 'No crews' });
+    expect(codes(page(good), ctx)).toEqual([]);
+    expect(codes(page(layer('k', 'Kanban', { source: 'open_crews', field: 'status' })), ctx)).toEqual([]);
+    expect(codes(page(layer('k', 'Kanban', { source: 'open_crews', field: 'name' })), ctx)).toEqual(['wrong_field_type']);
+    expect(codes(page(layer('k', 'Kanban', { source: 'open_crews', field: 'size' })), ctx)).toEqual(['wrong_field_type']);
+    expect(codes(page(layer('k', 'Kanban', { source: 'open_crews', field: 'nope' })), ctx)).toEqual(['unknown_field']);
+    expect(codes(page(layer('k', 'Kanban', { source: 'open_crews', field: 'created_at' })), ctx)).not.toEqual([]);
+    expect(codes(page(layer('k', 'Kanban', { source: 'one_crew', field: 'status' })), ctx)).toEqual(['wrong_source_mode']);
+    expect(codes(page(layer('k', 'Kanban', { source: 'open_crews', field: 'status', titleField: 'nope' })), ctx)).toEqual(['unknown_field']);
+    expect(codes(page(layer('k', 'Kanban', { source: 'open_crews', field: 'status', emptyText: 'x'.repeat(121) })), ctx)).toEqual(['invalid_props']);
+    expect(codes(page(layer('k', 'Kanban', { source: 'open_crews', field: 'status', className: 'x' })), ctx)).toEqual(['invalid_props']);
+    expect(codes(page(layer('k', 'Kanban', { source: 'open_crews', field: 'status' }, 'text')), ctx)).toEqual(['children_not_allowed']);
   });
 });

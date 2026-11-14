@@ -129,6 +129,7 @@ export function createHttpDataSource(apiBase = '/api') {
     async remove(table, id) {
       await send(rowUrl(table, id), { method: 'DELETE' });
     },
+    search: (term) => send(`${base}/_search?q=${encodeURIComponent(term)}`),
   };
 }
 
@@ -166,9 +167,9 @@ const EXPORT_MESSAGES = {
   export_too_large: ERROR_TEXT.exportTooLarge,
 };
 
-function filenameFrom(disposition, ids) {
+function filenameFrom(disposition, ids, ext = 'zip') {
   const match = /filename="?([^";]+)"?/i.exec(disposition ?? '');
-  return match ? match[1] : `export-${ids.join('-')}.zip`;
+  return match ? match[1] : `export-${ids.join('-')}.${ext}`;
 }
 
 function saveBlob(blob, filename) {
@@ -192,10 +193,25 @@ function saveBlob(blob, filename) {
  * @param {string} [apiBase]
  * @returns {Promise<{ filename: string, complete: boolean }>}
  */
-export async function exportTables(ids, apiBase = '/api') {
+export function exportTables(ids, apiBase = '/api') {
+  return downloadExport({ tables: ids }, ids, 'zip', apiBase);
+}
+
+/**
+ * Downloads one table as a bare CSV (`POST /api/export { tables: [id], format: 'csv' }`). A file that was cut off while
+ * streaming never saves: the connection fails and this rejects with the network message.
+ * @param {string} id
+ * @param {string} [apiBase]
+ * @returns {Promise<{ filename: string, complete: boolean }>}
+ */
+export function downloadTableCsv(id, apiBase = '/api') {
+  return downloadExport({ tables: [id], format: 'csv' }, [id], 'csv', apiBase);
+}
+
+async function downloadExport(payload, ids, ext, apiBase) {
   let response;
   try {
-    response = await fetch(`${apiBase}/export`, { method: 'POST', ...jsonInit('POST', { tables: ids }) });
+    response = await fetch(`${apiBase}/export`, { method: 'POST', ...jsonInit('POST', payload) });
   } catch {
     throw networkFailure();
   }
@@ -205,7 +221,7 @@ export async function exportTables(ids, apiBase = '/api') {
     const known = EXPORT_MESSAGES[e.code];
     throw failure(known ?? e.sentence ?? ERROR_TEXT.exportFailed, e.code, undefined, known ? undefined : e.action, e.requestId);
   }
-  const filename = filenameFrom(response.headers.get('Content-Disposition'), ids);
+  const filename = filenameFrom(response.headers.get('Content-Disposition'), ids, ext);
   const complete = response.headers.get('X-Export-Complete') === '1';
   let blob;
   try {

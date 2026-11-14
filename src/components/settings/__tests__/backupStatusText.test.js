@@ -109,6 +109,25 @@ describe('noticeSentence', () => {
     );
   });
 
+  it('warns once when the second folder copy is failing, alone or after another warning', () => {
+    const WARN = 'Copies to your second backup folder are failing. Backups on this PC are fine.';
+    const failingCopy = { enabled: true, health: 'failing' };
+    expect(noticeSentence({ health: 'ok', lastSuccessAt: hoursBack(1), secondCopy: failingCopy }, now)).toBe(WARN);
+    expect(noticeSentence({ health: 'ok', diskWarning: true, secondCopy: failingCopy }, now)).toBe(
+      `Disk space is low. Free up some disk space. ${WARN}`,
+    );
+    expect(noticeSentence({ health: 'stale', autoSwitch: false, autoEnabled: false, secondCopy: failingCopy }, now)).toBe(
+      WARN,
+    );
+    expect(noticeSentence({ health: 'ok', restoring: true, secondCopy: failingCopy }, now)).toBe('');
+  });
+
+  it('says nothing about the second folder when it is off, ok or pending', () => {
+    for (const health of ['off', 'ok', 'pending']) {
+      expect(noticeSentence({ health: 'ok', lastSuccessAt: hoursBack(1), secondCopy: { enabled: true, health } }, now)).toBe('');
+    }
+  });
+
   it('reuses the status sentence for stale and failing backups', () => {
     const failing = { health: 'failing', autoEnabled: false };
     expect(noticeSentence(failing, now)).toBe(statusSentence(failing, now));

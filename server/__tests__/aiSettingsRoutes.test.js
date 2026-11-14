@@ -4,9 +4,9 @@ import { PUBLIC_BUILD } from './helpers/proBuild.js';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { installFakeOllama } from './helpers/fakeOllama.js';
 import { __resetAiForTests } from '../ai/index.js';
 import { AI_SETTINGS_KEY } from '../ai/settings.js';

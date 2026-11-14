@@ -11,9 +11,9 @@ vi.hoisted(() => {
 import request from 'supertest';
 
 vi.mock('../../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../../net/fetch.js';
 import { installFakeOllama, textReply, toolReply } from '../helpers/fakeOllama.js';
 import { __resetAiForTests } from '../../ai/index.js';
 import { APPROVED_TOOL_RESULT, DECLINED_TOOL_RESULT, FAILED_SAVE_TOOL_RESULT, __resetPendingActionsForTests, describeWrite } from '../../agents/pendingActions.js';
@@ -395,6 +395,33 @@ describe('writes are parked, never run from the loop', () => {
     expect(confirm.args).toMatchObject({ id, values: { status: 'active' }, title: 'Bravo', display: [{ label: 'Status', value: 'active' }] });
     const ok = await request(app).post(`/api/assistant/actions/${confirm.token}`).set('X-Forwarded-For', nextIp()).send({ approve: true });
     expect(ok.body.data.result).toMatchObject({ created: false, saved: { id, name: 'Bravo', size: 6, status: 'active' } });
+  });
+
+  it('M2 and L1: an update says the stored text of each changed text field and which changed fields are selects', async () => {
+    const { crews } = seedCrews();
+    const id = crews.find((c) => c.name === 'Bravo').id;
+    const pre = await precheckWrite('save_record__crews', { id, values: { name: 'Bravo Prime', status: 'active' } });
+    expect(pre.ok).toBe(true);
+    expect(pre.stored).toEqual({ name: 'Bravo', status: 'paused' });
+    expect(pre.optionFields).toEqual(['status']);
+    const created = await precheckWrite('save_record__crews', { values: { name: 'Delta', status: 'active' } });
+    expect(created.stored).toBeUndefined();
+    expect(created.optionFields).toEqual(['status']);
+  });
+
+  it('L3: a long link title on the card and a long title in the summary say how many characters are hidden, and never split an emoji', async () => {
+    const PERSON = '33333333-3333-4333-8333-333333333333';
+    const longName = `${'x'.repeat(119)}\u{1F600}${'y'.repeat(10)}`;
+    seedDb(db, { people: [{ id: PERSON, name: longName }], crews: [{ name: 'Bravo', size: 1, status: 'paused' }] });
+    const pre = await precheckWrite('save_record__crews', { values: { name: 'Delta', lead_id: PERSON } });
+    expect(pre.ok).toBe(true);
+    const shown = pre.args.display.find((r) => r.label === 'Lead').value;
+    expect(shown).toBe(`${'x'.repeat(119)}\u{1F600} (10 more characters not shown)`);
+    const bigTitle = `${'z'.repeat(119)}\u{1F600}${'q'.repeat(10)}`;
+    const save = await precheckWrite('save_record__crews', { values: { name: bigTitle } });
+    expect(save.args.title).toBe(bigTitle);
+    expect(describeWrite('save_record__crews', save.args)).toBe(`Add to Crews: "${'z'.repeat(119)}\u{1F600}" (10 more characters not shown)`);
+    expect(describeWrite('save_record__crews', { title: 'a'.repeat(120) })).toBe(`Add to Crews: "${'a'.repeat(120)}"`);
   });
 
   it('declining changes nothing', async () => {

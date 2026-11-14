@@ -6,8 +6,9 @@ import os from 'node:os';
 export const REDACTED = '[redacted]';
 
 // app_state rows no API ever returns (state, export): the license activation holds the buyer's
-// email and is useless on another computer.
-export const HIDDEN_APP_STATE_KEYS = new Set(['license.activation']);
+// email and is useless on another computer; backup.copyTo is a folder path on this computer (it can
+// name a person or a share), and a restore still carries it through RESTORE_CARRY_KEYS.
+export const HIDDEN_APP_STATE_KEYS = new Set(['license.activation', 'backup.copyTo']);
 
 // Substring match on a key normalized as: camelCase -> snake (insert '_' at lower->Upper),
 // lowercase. Deliberately broad (fail closed): `author`/`authorName` are spared by the

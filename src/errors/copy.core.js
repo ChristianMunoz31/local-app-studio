@@ -141,6 +141,7 @@ export const CORE_ERROR_COPY = Object.freeze({
   import_mapping_invalid: { status: 400, sentence: 'Some columns are matched to fields that cannot take them.', action: 'Match each column to a different field, or leave it out.' },
   network_unreachable: { status: 0, sentence: 'The app did not answer.', action: 'Check that it is still running, then try again.', clientOnly: true },
   render_failed: { status: 0, sentence: 'This screen stopped working.', action: 'Press Try again. If it keeps happening, reload the app.', clientOnly: true },
+  spec_too_new: { status: 409, sentence: 'This app uses something this version does not know.', action: 'Update Local App Studio, then open it again.' },
   chunk_load_failed: { status: 0, sentence: 'Part of the app could not be loaded.', action: 'Reload the app.', clientOnly: true },
   grid_not_allowed: { status: 0, sentence: 'This part has a place on a grid, but it is not inside a grid that places parts freely.', action: 'Remove its place, or move it into a grid with Place parts freely turned on.', clientOnly: true },
   grid_overlap: { status: 0, sentence: 'Two parts cannot share the same cells.', action: 'Move or resize one of them to empty cells.', clientOnly: true },

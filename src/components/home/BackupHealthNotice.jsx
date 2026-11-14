@@ -38,7 +38,11 @@ export default function BackupHealthNotice() {
     ) : null;
   if (!text && !note) return null;
   const Icon =
-    reminder || (status?.health === 'none' && !status?.diskWarning && status?.recoveryRequired !== true)
+    reminder ||
+    (status?.health === 'none' &&
+      !status?.diskWarning &&
+      status?.recoveryRequired !== true &&
+      status?.secondCopy?.health !== 'failing')
       ? Info
       : AlertTriangle;
   const tone = Icon === Info ? 'text-slate-slate300' : 'text-accent-amber';

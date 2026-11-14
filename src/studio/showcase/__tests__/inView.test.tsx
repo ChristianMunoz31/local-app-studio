@@ -27,7 +27,7 @@ describe('previews of a long list', () => {
 
     const records = Array.from({ length: 50 }, (_, i) => recordOf({ ...SEED_FEATURES[i % 2], id: `feature_${i}`, label: `Feature ${i}` }));
     const entries = buildShowcaseEntries(records);
-    expect(entries).toHaveLength(50 + 31);
+    expect(entries).toHaveLength(50 + 33);
     const library = new Map(SEED_FEATURES.map((d) => [d.id, d]));
     render(
       <ul>
@@ -36,7 +36,7 @@ describe('previews of a long list', () => {
         ))}
       </ul>,
     );
-    await waitFor(() => expect(watchers).toHaveLength(81));
+    await waitFor(() => expect(watchers).toHaveLength(83));
     expect(screen.queryAllByTestId('scale-content')).toHaveLength(0);
 
     const near = watchers.slice(0, 4);

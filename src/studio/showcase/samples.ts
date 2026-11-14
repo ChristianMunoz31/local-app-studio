@@ -65,7 +65,7 @@ function modelFor(layer: LayoutLayer, spec: AppSpec, pageId: string): PreviewMod
 
 let builtIn: AppSpec | null | undefined;
 
-/** Tasks of a crew: the table and the list source the Timeline, Checklist and Quick add examples name. Studio previews only. */
+/** Tasks of a crew: the table and the list source the Timeline, Checklist and Quick add examples name, and a status for the board. Studio previews only. */
 const TASKS_TABLE: NonNullable<AppSpecInput['tables']>[number] = {
   id: 'tasks',
   label: 'Tasks',
@@ -75,6 +75,7 @@ const TASKS_TABLE: NonNullable<AppSpecInput['tables']>[number] = {
     { id: 'done', label: 'Done', type: 'boolean' },
     { id: 'due', label: 'Due', type: 'date' },
     { id: 'hours', label: 'Hours', type: 'integer' },
+    { id: 'status', label: 'Status', type: 'select', options: ['To do', 'Doing', 'Done'] },
     { id: 'crew_id', label: 'Crew', type: 'reference', table: 'crews' },
   ],
 };
@@ -86,12 +87,18 @@ const OPEN_TASKS: NonNullable<AppSpecInput['pages'][number]['sources']>[number] 
   limit: 50,
 };
 
+/** Every task, for the Board tile: its columns need rows in more than one status, which OPEN_TASKS (not done) would thin out. */
+const TASK_BOARD: NonNullable<AppSpecInput['pages'][number]['sources']>[number] = { id: 'task_board', table: 'tasks', orderBy: [{ field: 'due', dir: 'asc' }], limit: 50 };
+
+/** Props a tile draws in place of the part's example, where the example's own list would show one column only. */
+const PREVIEW_PROPS: Readonly<Record<string, LayoutLayer['props']>> = { Kanban: { source: 'task_board', field: 'status', titleField: 'title', subtitleField: 'due' } };
+
 /** The Crew Roster sample plus tasks, with the record page the part examples name; built once. */
 function builtInSpec(): AppSpec | null {
   if (builtIn === undefined) {
     const base = crewRoster as unknown as AppSpecInput;
     const preview = builtInPreviewSpec({ ...base, tables: [...(base.tables ?? []), TASKS_TABLE] });
-    const input: AppSpecInput = { ...preview, pages: preview.pages.map((p) => (p.id === 'crew' ? { ...p, sources: [...(p.sources ?? []), OPEN_TASKS] } : p)) };
+    const input: AppSpecInput = { ...preview, pages: preview.pages.map((p) => (p.id === 'crew' ? { ...p, sources: [...(p.sources ?? []), OPEN_TASKS, TASK_BOARD] } : p)) };
     const checked = validateAppSpec(input, { ...CATALOG_CHECKS });
     builtIn = checked.ok ? checked.value : null;
   }
@@ -104,7 +111,9 @@ const featureModels = new WeakMap<FeatureLibrary, Map<string, PreviewModel | nul
 function buildPart(entry: ShowcaseEntry): PreviewModel | null {
   const spec = builtInSpec();
   const example = getPartDefinition(entry.id)?.example;
-  return spec === null || example === undefined ? null : modelFor(example, spec, 'crew');
+  if (spec === null || example === undefined) return null;
+  const props = Object.hasOwn(PREVIEW_PROPS, entry.id) ? PREVIEW_PROPS[entry.id] : example.props;
+  return modelFor({ ...example, props }, spec, 'crew');
 }
 
 function buildFeature(entry: ShowcaseEntry, library: FeatureLibrary): PreviewModel | null {

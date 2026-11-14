@@ -1,6 +1,6 @@
 /* Tailwind 4. The kit theme (colors, fonts, shadows) stays in tailwind.config.cjs and is
  * loaded through @config. Corner sizes are --radius-* variables in :root. `source(none)` turns off automatic source detection: the explicit
- * @source lines below are the only files scanned. The vendored ui-builder is not scanned: no build imports it. pro/src holds the cloud settings screens a pro build
+ * @source lines below are the only files scanned. pro/src holds the cloud settings screens a pro build
  * uses (utility class names only; a public build has none of those files, and a missing folder is ignored). */
 @import 'tailwindcss' source(none);
 @import 'tw-animate-css';
@@ -9,13 +9,12 @@
 @source './';
 @source '../packages/runtime/src/';
 @source '../pro/src/';
-@source not './vendor/';
 
 /* Tailwind 4 has no `dark` class by default. The kit is dark by default and light under
- * `:root.light`, so `dark:` means "not light" (vendored shadcn code uses dark: variants). */
+ * `:root.light`, so `dark:` means "not light" (shadcn-style `dark:` variants). */
 @custom-variant dark (&:where(:root:not(.light), :root:not(.light) *));
 
-/* shadcn color names (vendored ui-builder) mapped onto the kit palette. The values live in
+/* shadcn color names mapped onto the kit palette. The values live in
  * :root / :root.light below; `inline` keeps the utilities pointing at the live variables. */
 @theme inline {
     --color-border: var(--border);
@@ -491,7 +490,7 @@
     --chart-tick-strong: 214 203 186;
 
     /*
-     * shadcn tokens for the vendored ui-builder editor, mapped onto the kit palette (registered
+     * shadcn tokens, mapped onto the kit palette (registered
      * with @theme inline at the top of this file). Full color values, not triplets.
      */
     --background: rgb(var(--slate-950));

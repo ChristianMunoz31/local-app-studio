@@ -10,7 +10,7 @@ import { WIDTH_UNITS, findLayer, handleCandidates, isShareWidth, resizePair } fr
 import { WIDTH_LABELS, pairChange } from '../lib/sizingWords';
 import { ChromePortal } from './ChromeLayer';
 import { blockName } from './designLabels';
-import { useDesign } from './DesignContext';
+import { useDesign, useLive } from './DesignContext';
 
 interface Props {
   left: LayoutLayer;
@@ -26,7 +26,8 @@ interface Drag {
 }
 
 export default function ResizeHandle({ left, right, parent }: Props) {
-  const { root, apply, tell, resizing, previewResize } = useDesign();
+  const { root, apply, tell, previewResize } = useDesign();
+  const resizing = useLive('resizing');
   const box = useRef<HTMLDivElement | null>(null);
   const drag = useRef<Drag | null>(null);
   const l = readSizing(left.sizing).width;

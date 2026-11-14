@@ -16,7 +16,7 @@ import { btnSecondary, formErrorClass, inputClass } from '../../../../../src/com
 import { usePageContext } from '../../../../../src/contexts/PageContextContext';
 import { onDataChanged } from '../../../../../src/utils/dataChanged';
 import { ERROR_TEXT, errorText } from '@/catalog/errorText.ts';
-import { createHttpDataSource, exportTables } from '../dataClient.js';
+import { createHttpDataSource, downloadTableCsv, exportTables } from '../dataClient.js';
 import ImportBackup from './ImportBackup.jsx';
 import ImportMapping from './ImportMapping.jsx';
 import ImportPanel from './ImportPanel.jsx';
@@ -124,11 +124,16 @@ function TableView({ spec, table, dataSource, apiBase }) {
     setOffset(0);
     setFilter(conditions);
   };
-  const exportThis = async () => {
+  const exportThis = async (asCsv) => {
     setExportNote({ tone: 'info', text: ERROR_TEXT.exportPreparing });
     try {
-      await exportTables([table.id], apiBase);
-      setExportNote({ tone: 'ok', text: ERROR_TEXT.exportReady });
+      const result = await (asCsv ? downloadTableCsv(table.id, apiBase) : exportTables([table.id], apiBase));
+      // A cut-off file was still saved: say so instead of calling it ready.
+      setExportNote(
+        result?.complete === false
+          ? { tone: 'error', text: ERROR_TEXT.exportPartial }
+          : { tone: 'ok', text: ERROR_TEXT.exportReady },
+      );
     } catch (e) {
       setExportNote({ tone: 'error', text: errorText(e, ERROR_TEXT.exportFailed) });
     }
@@ -149,9 +154,13 @@ function TableView({ spec, table, dataSource, apiBase }) {
         <div className="mt-1 flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-bold text-slate-slate100 tracking-tight">{table.label}</h2>
           <div className="flex flex-wrap items-center gap-2">
-            <button type="button" onClick={exportThis} className={`${btnSecondary} inline-flex items-center gap-1.5`}>
+            <button type="button" onClick={() => exportThis(false)} className={`${btnSecondary} inline-flex items-center gap-1.5`}>
               <Download size={14} aria-hidden="true" />
               Export this table
+            </button>
+            <button type="button" onClick={() => exportThis(true)} className={`${btnSecondary} inline-flex items-center gap-1.5`}>
+              <Download size={14} aria-hidden="true" />
+              Download CSV
             </button>
             <button type="button" ref={importRef} onClick={() => setImporting(true)} className={`${btnSecondary} inline-flex items-center gap-1.5`}>
               <Upload size={14} aria-hidden="true" />

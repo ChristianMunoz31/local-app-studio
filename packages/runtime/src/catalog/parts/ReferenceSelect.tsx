@@ -12,6 +12,7 @@ export interface ReferenceSelectProps {
   'aria-label'?: string;
   'aria-describedby'?: string;
   'aria-invalid'?: boolean;
+  disabled?: boolean;
 }
 
 /** A drop-down of the records of a table, labelled by their title. Shared by RecordFormView, FilterBar and ReferencePicker. */

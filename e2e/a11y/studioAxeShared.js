@@ -10,7 +10,7 @@ import { scan, describe as describeViolations } from '../support/axe.js';
 import { setupStudio, settle, theme } from './studioShared.js';
 
 /** The shards, one spec file each (`group` of a screen in studioShared.js). A screen with a group not listed here fails the run. */
-export const AXE_GROUPS = ['apps', 'features', 'prompt', 'design', 'steps'];
+export const AXE_GROUPS = ['apps', 'features', 'prompt', 'design', 'steps', 'parts'];
 
 /** Registers the axe tests of one group in the calling spec file. */
 export function registerAxe(group) {

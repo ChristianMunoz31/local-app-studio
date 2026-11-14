@@ -3,9 +3,9 @@
 import https from 'node:https';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { CLOUD_HOST } from './helpers/fakeCloud.js';
 import { __setCloudDnsLookupForTests, cloudHttpsAgent, guardedLookup, isBlockedHostname, isPublicIp } from '../ai/cloudGuard.js';
 import { validateCloudBaseUrl, validateEndpointUrl } from '../ai/settings.js';

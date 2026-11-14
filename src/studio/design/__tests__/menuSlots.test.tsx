@@ -261,14 +261,14 @@ describe('the bar on the canvas', () => {
 });
 
 describe('the shelf mark', () => {
-  it('says Fits the menu on exactly the six menu parts and on no saved feature', async () => {
+  it('says Fits the menu on exactly the seven menu parts and on no saved feature', async () => {
     await openPage(TOP);
     await waitFor(() => expect(document.querySelectorAll('[data-entry-key]').length).toBeGreaterThan(10));
     const marked = Array.from(document.querySelectorAll<HTMLElement>('[data-entry-key]'))
       .filter((el) => within(el).queryByText('Fits the menu') !== null)
       .map((el) => el.dataset.entryKey)
       .sort();
-    expect(marked).toEqual(['part:Button', 'part:Link', 'part:QuickAdd', 'part:Row', 'part:SearchBox', 'part:Text']);
+    expect(marked).toEqual(['part:Button', 'part:GlobalSearch', 'part:Link', 'part:QuickAdd', 'part:Row', 'part:SearchBox', 'part:Text']);
   });
 });
 
@@ -296,7 +296,7 @@ describe('putting parts on the bar', () => {
   it('refuses a part the bar does not take in plain words (no type names), and a saved feature with its own', async () => {
     await openPage(TOP);
     dragPalette('part:DataTable', { kind: 'refuse', parentId: '@menu-end', tree: 'menu' });
-    expect(screen.getByText('The menu bar takes buttons, links, search boxes, quick adds, text and rows.').closest('[role="status"]')).toBeTruthy();
+    expect(screen.getByText('The menu bar takes buttons, links, search boxes, global search, quick adds, text and rows.').closest('[role="status"]')).toBeTruthy();
     expect(inSlot('end')).toEqual([]);
     expect(screen.queryByText(/SearchBox|QuickAdd/)).toBeNull();
     const feature = seedRecords()[0];
@@ -307,7 +307,7 @@ describe('putting parts on the bar', () => {
   it('refuses a page block the bar does not take, and keeps it on the page', async () => {
     await openPage(TOP);
     dragBlock('t1', 'page', { parentId: '@menu-end', index: 0, tree: 'menu' });
-    expect(notice('The menu bar takes buttons, links, search boxes, quick adds, text and rows.')).toBeTruthy();
+    expect(notice('The menu bar takes buttons, links, search boxes, global search, quick adds, text and rows.')).toBeTruthy();
     expect(inSlot('end')).toEqual([]);
     expect(block('t1')).toBeTruthy();
   });

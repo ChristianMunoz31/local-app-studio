@@ -32,4 +32,13 @@ describe('precheckRuntimeWrite display', () => {
     expect(res.args.display).toHaveLength(15);
     expect(res.args.display.at(-1)).toEqual({ label: 'Field 14', value: 'v14' });
   });
+
+  it('marks a value cut at 120 characters with how many characters are not shown, and leaves shorter ones alone', async () => {
+    const exact = 'e'.repeat(120);
+    const long = `${'x'.repeat(120)}TAIL-THE-PERSON-MUST-KNOW-ABOUT`;
+    const res = await precheckRuntimeWrite('save_record__wide', { values: { f0: exact, f1: long } });
+    expect(res.args.display[0].value).toBe(exact);
+    expect(res.args.display[1].value).toBe(`${'x'.repeat(120)} (${long.length - 120} more characters not shown)`);
+    expect(res.args.values.f1).toBe(long);
+  });
 });

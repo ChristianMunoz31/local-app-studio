@@ -62,6 +62,20 @@ export interface TableStats {
   fields: Record<string, FieldStats>;
 }
 
+/** One table's hits of a global search: at most 5 rows, the real total, and the record page that opens a hit. */
+export interface GlobalSearchGroup {
+  table: string;
+  label: string;
+  pageId: string;
+  total: number;
+  rows: { id: string; title: string }[];
+}
+
+/** `GET {apiBase}/data/_search?q=`: groups in spec table order, empty groups left out. */
+export interface GlobalSearchResult {
+  groups: GlobalSearchGroup[];
+}
+
 /** Rejections are Error values with `code` and, for a record problem, `field`. */
 export interface CatalogDataSource {
   list(table: string, q: DataQuery): Promise<{ rows: DataRow[]; total: number }>;
@@ -72,6 +86,8 @@ export interface CatalogDataSource {
   create(table: string, values: DataRow): Promise<DataRow>;
   update(table: string, id: string, values: DataRow): Promise<DataRow>;
   remove(table: string, id: string): Promise<void>;
+  /** Search every table that has a text field and a record page. Absent where the data source cannot (the designer canvas). */
+  search?(term: string): Promise<GlobalSearchResult>;
 }
 
 export interface CatalogData {
@@ -129,12 +145,14 @@ export interface SourceInfo {
   id: string;
   table: string;
   mode: 'list' | 'record';
+  /** The source's own row limit (absent when the spec was not normalized). */
+  limit?: number;
 }
 
 function sourceOf(data: CatalogData, sourceId: string): SourceInfo | null {
   const page = data.spec?.pages.find((p) => p.id === data.pageId);
   const source = page?.sources?.find((s) => s.id === sourceId);
-  return source ? { id: source.id, table: source.table, mode: source.mode ?? 'list' } : null;
+  return source ? { id: source.id, table: source.table, mode: source.mode ?? 'list', limit: source.limit } : null;
 }
 
 /** The source of the current page by id, or null (no spec, no page, or no such source). */

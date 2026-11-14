@@ -16,7 +16,7 @@ export const DECLINED_TOOL_RESULT = 'The person declined this save. Nothing was 
 export const APPROVED_TOOL_RESULT = 'Saved.';
 export const FAILED_SAVE_TOOL_RESULT = 'The save could not be done. Nothing was saved.';
 
-/** @type {Map<string, { conversationId: string|null, name: string, args: object, callId: string, ctx: object, expiresAt: number }>} */
+/** @type {Map<string, { conversationId: string|null, name: string, args: object, callId: string, ctx: object, origin: object|null, expiresAt: number }>} */
 const pending = new Map();
 
 /**
@@ -33,10 +33,11 @@ function sweep(now = Date.now()) {
 /**
  * Park a write call and return its confirmation token.
  * @param {{ conversationId: string|null, name: string, args: object, callId: string, ctx: { writeCount?: number, writeCap?: number } }} action
- * `ctx` is the run's write counter, shared so confirmed writes count toward its cap.
+ * `ctx` is the run's write counter, shared so confirmed writes count toward its cap. `origin` is the server's mark
+ * (server/agents/saveOrigin.js), kept beside the action; it is never taken from the model's arguments.
  * @returns {string}
  */
-export function createPendingAction({ conversationId, name, args, callId, ctx }) {
+export function createPendingAction({ conversationId, name, args, callId, ctx, origin }) {
   sweep();
   const token = randomBytes(16).toString('hex');
   pending.set(token, {
@@ -45,6 +46,7 @@ export function createPendingAction({ conversationId, name, args, callId, ctx })
     args: args || {},
     callId,
     ctx: ctx || { writeCount: 0, writeCap: 3 },
+    origin: origin ?? null,
     expiresAt: Date.now() + ACTION_TTL_MS,
   });
   return token;
@@ -112,7 +114,12 @@ export const pendingActionCount = () => pending.size;
  * @returns {string}
  */
 export function describeWrite(name, args = {}) {
-  const q = (v) => `"${String(v ?? '').slice(0, 120)}"`;
+  // Cut by code points (never inside a surrogate pair); a cut title says how many characters are not shown.
+  const q = (v) => {
+    const chars = Array.from(String(v ?? ''));
+    const hidden = Math.max(0, chars.length - 120);
+    return `"${chars.slice(0, 120).join('')}"${hidden > 0 ? ` (${hidden} more characters not shown)` : ''}`;
+  };
   // Runtime mode: a canonical save_record__<table> call. Studio mode has no write tool.
   const parsed = parseRuntimeToolName(name, Object.keys(getCompiledSpec()?.tables ?? {}));
   if (parsed?.verb === 'save_record') {

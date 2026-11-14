@@ -30,6 +30,7 @@ import {
   resolveBackupFile,
 } from './paths.js';
 import { planRetention } from './retention.js';
+import { getSecondCopyStatus, requestSecondCopy } from './secondCopy.js';
 import { getAutoBackup, getBackupSettings, shouldShowAutoOffReminder } from './settings.js';
 import {
   databaseBytes,
@@ -249,6 +250,7 @@ export async function getBackupStatus({ now, dir = backupsDir(), fsOps = createF
   });
   return {
     ...status,
+    secondCopy: await getSecondCopyStatus({ dir, fsOps, state, metas }),
     autoSwitch: auto ? auto.enabled : null,
     autoChangedAt: auto?.changedAt ?? null,
     autoOffReminder: auto ? shouldShowAutoOffReminder({ auto, newestGoodAt: status.lastSuccessAt, now: at }) : false,
@@ -617,6 +619,8 @@ export async function runScheduledBackup(opts = {}) {
   try {
     if (!(await getAutoBackup()).enabled) return { ok: true, created: false, skipped: 'auto_off' };
     const result = await createBackup({ ...opts, kind: 'auto' });
+    // A new backup is copied to the second folder after this run returns; never awaited.
+    if (result.created) void requestSecondCopy({ now: opts.now, fsOps: opts.fsOps, ...(opts.dir ? { dir: opts.dir } : {}) });
     return { ok: true, created: result.created };
   } catch (e) {
     console.error('Scheduled backup failed:', e?.code || 'unknown');
@@ -702,6 +706,8 @@ export function startBackupScheduler({
       const ops = fsOps ?? createFsOps();
       ensureBackupsDir(where);
       await flushRecoveryAudit({ dir: where, fsOps: ops });
+      // The second copy retries on every tick, even with automatic backups off (a missed or failed copy).
+      void requestSecondCopy({ now, fsOps: ops, dir: where });
       // The user's switch: when off, no automatic backup (the check itself still runs, so it takes
       // effect on the next tick after the switch is turned back on).
       if (!(await getAutoBackup()).enabled) return;

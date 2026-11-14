@@ -10,7 +10,7 @@ import { getPreviewManager } from './preview/manager.js';
 import { copyPreviewData } from './preview/scratch.js';
 import { loadLibrary } from './features/store.js';
 import { checkSample } from '../../src/studio/lib/sampleData.ts';
-import { expandAndCheck } from './specCheck.js';
+import { SPEC_TOO_NEW, expandAndCheck } from './specCheck.js';
 import { clearWaiting, getFirstPrompt, getWaiting } from './waiting.js';
 import { readSample } from './sample.js';
 
@@ -32,7 +32,9 @@ const safe = (fn) => async (req, res) => {
 };
 
 const invalidSpec = (res, issues) =>
-  sendError(res, 'invalid_spec', { message: issues[0]?.message ?? 'The app is not valid.', extra: { issues } });
+  issues[0]?.code === SPEC_TOO_NEW
+    ? sendError(res, 'spec_too_new', { message: issues[0].message })
+    : sendError(res, 'invalid_spec', { message: issues[0]?.message ?? 'The app is not valid.', extra: { issues } });
 
 const EXPORT_MAX_BYTES = 48 * 1024 * 1024;
 const EXPORT_TIMEOUT_MS = 60000;

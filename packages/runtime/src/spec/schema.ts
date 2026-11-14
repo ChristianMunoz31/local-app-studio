@@ -390,6 +390,8 @@ export const AppSpecSchema = z.strictObject({
   nav: z.array(NavItemSchema).max(LIMITS.nav).default([]),
   theme: ThemeSchema.default({ preset: 'aurora', radius: 'md' }),
   menu: MenuSchema.optional(),
+  /** The optional capabilities the design uses (ADR-015, src/runtime/specCompat.js). Absent for a baseline design; set by checkSpec, never by hand. */
+  features: z.array(z.string().max(40)).max(50).optional(),
 });
 
 /** The plan step of the generation pipeline asks the model for this block only. */

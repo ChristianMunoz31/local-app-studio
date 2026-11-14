@@ -13,7 +13,7 @@ vi.mock('../../scripts/release/releaseConfig.js', async (importOriginal) => ({
   ...(await importOriginal()),
   RELEASE_CONFIG: Object.freeze({ sourceRepo: 'acme/notes', releasesRepo: 'acme/notes-releases' }),
 }));
-vi.mock('node-fetch', () => ({ default: vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) })) }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) })) }));
 vi.mock('../dataAccess.js', () => {
   const unavailable = () => Object.assign(new Error('Local database is unavailable.'), { status: 503 });
   return {
@@ -29,7 +29,7 @@ vi.mock('../dataAccess.js', () => {
   };
 });
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import {
   NETWORK_FEATURES,
   NetworkOptInError,

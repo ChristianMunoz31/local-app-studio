@@ -4,7 +4,7 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { TABLES } from '../db/tables.js';
-import { loadAppMigrations, loadMigrations, migrate } from '../db/migrate.js';
+import { loadAppMigrations, loadDerivedIndexSql, loadFtsSql, loadMigrations, migrate } from '../db/migrate.js';
 import { createFsOps } from './fsops.js';
 
 const SQLITE_MAGIC = Buffer.from('SQLite format 3\0', 'latin1');
@@ -174,24 +174,37 @@ function appSchemaVersion(db) {
 }
 
 /**
- * Sorted schema object list (type, name, table, normalized SQL) a fresh database has at core version `version` and
- * app-track version `appVersion` (0: no app-track objects, not even app_schema_version).
+ * Sorted schema object lists (type, name, table, normalized SQL) a fresh database may have at core version `version` and
+ * app-track version `appVersion` (0: no app-track objects, not even app_schema_version). The shapes a database at these versions may have.
+ * With an app track there are up to three: the derived indexes (ADR-014) and the full text indexes (ADR-016) are applied
+ * on every start of a built app, so a backup taken before the first start of a build that has them lacks them, and one taken
+ * after holds them. All are the same app at the same version.
+ * @returns {string[][]}
  */
-function expectedShape(version, appVersion = 0) {
+function expectedShapes(version, appVersion = 0) {
   const key = `${version}:${appVersion}`;
   if (shapeCache.has(key)) return shapeCache.get(key);
-  const db = new DatabaseSync(':memory:');
-  try {
-    migrate(db, {
-      migrations: loadMigrations().filter((m) => m.version <= version),
-      ...(appVersion > 0 ? { appVersion } : { appMigrations: [] }),
-    });
-    const shape = shapeOf(db);
-    shapeCache.set(key, shape);
-    return shape;
-  } finally {
-    db.close();
+  const build = (derivedIndexSql, ftsSql) => {
+    const db = new DatabaseSync(':memory:');
+    try {
+      migrate(db, {
+        migrations: loadMigrations().filter((m) => m.version <= version),
+        ...(appVersion > 0 ? { appVersion, derivedIndexSql, ftsSql } : { appMigrations: [] }),
+      });
+      return shapeOf(db);
+    } finally {
+      db.close();
+    }
+  };
+  const shapes = [build(appVersion > 0 ? loadDerivedIndexSql() : '', appVersion > 0 ? loadFtsSql() : '')];
+  if (appVersion > 0) {
+    // Fewer steps applied: a backup from before the full text indexes (derived only) and one from before either.
+    for (const other of [build(loadDerivedIndexSql(), ''), build('', '')]) {
+      if (!shapes.some((shape) => JSON.stringify(shape) === JSON.stringify(other))) shapes.push(other);
+    }
   }
+  shapeCache.set(key, shapes);
+  return shapes;
 }
 
 function shapeOf(db) {
@@ -241,7 +254,7 @@ export function inspectDbFile(file, { latestVersion = latestSchemaVersion(), max
     const shapeOk =
       schemaVersion > latestVersion || (appVersion > 0 && appVersion > latestAppSchemaVersion())
         ? null
-        : JSON.stringify(shapeOf(db)) === JSON.stringify(expectedShape(schemaVersion, appVersion));
+        : expectedShapes(schemaVersion, appVersion).some((shape) => JSON.stringify(shapeOf(db)) === JSON.stringify(shape));
     return { integrityOk, schemaVersion, rowCounts, totalRows, fingerprint, shapeOk };
   } finally {
     db.close();

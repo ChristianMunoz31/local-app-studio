@@ -73,7 +73,7 @@ Assistant can use any provider that speaks the OpenAI Chat Completions API. The 
 
 What the user sets in Settings > AI:
 
-- **Base URL.** A public `https://` address, optionally with a path, no credentials, no query string. Local names (`localhost`, `.local`, `.lan`, `.internal`, single-label names) and private, loopback or link-local IP addresses are refused when saved, and again when connecting (a name that resolves to a private address is refused, which blocks DNS tricks). Redirects are refused.
+- **Base URL.** A public `https://` address, optionally with a path, no credentials, no query string. Local names (`localhost`, `.local`, `.lan`, `.internal`, single-label names) and private, loopback or link-local IP addresses are refused when saved, and again when connecting (a name that resolves to a private address is refused, which blocks DNS tricks, because the cloud request goes through `node:https` with the guarded agent in `server/net/fetch.js`, not through built-in fetch, which ignores an agent). Redirects are refused.
 - **Model name** and the token parameter the provider expects (`max_tokens` or `max_completion_tokens`).
 - **API key.** Saved encrypted on the computer (see `server/secrets/`), sent only to the provider's host, and never included in exports.
 

@@ -5,6 +5,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { chmodBestEffort, getDataDir } from '../paths.js';
 import { DbError, toDbError } from './errors.js';
 import { migrate as runMigrations } from './migrate.js';
+import { dropStatementCache } from './statementCache.js';
 
 export const DB_FILENAME = 'app.db';
 export const BUSY_TIMEOUT_MS = 5000;
@@ -139,11 +140,30 @@ export function peekDb() {
   return singleton;
 }
 
-/** Checkpoints the WAL into the main file, then closes the singleton if open; idempotent. */
+/**
+ * Best effort PRAGMA optimize (refreshes planner statistics where they are stale) for a clean close. Never throws, and
+ * does nothing on a handle that is closed or inside a transaction. Returns whether it ran.
+ * @param {DatabaseSync} db
+ * @returns {boolean}
+ */
+export function optimizeDb(db) {
+  try {
+    if (!db || db.isOpen === false || db.isTransaction === true || (depths.get(db) ?? 0) > 0) return false;
+    db.exec('PRAGMA optimize');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Runs PRAGMA optimize, checkpoints the WAL into the main file, then closes the singleton if open; idempotent. */
 export function closeDb() {
   const db = singleton;
   singleton = null;
   if (!db) return;
+  dropStatementCache(db);
+  // Only a handle that still answers a trivial query counts as healthy; a damaged one skips straight to the close.
+  if (pingDb(db)) optimizeDb(db);
   try {
     db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
   } catch {
@@ -172,6 +192,7 @@ export function clearDbShutdown() {
  * @param {DatabaseSync | null} db
  */
 export function setDbForTests(db) {
+  if (singleton && singleton !== db) dropStatementCache(singleton);
   singleton = db;
 }
 

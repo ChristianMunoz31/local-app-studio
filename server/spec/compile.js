@@ -1,7 +1,9 @@
 // The AppSpec compiler (ADR-004): pure JS, no zod, no I/O, deterministic (same spec in, byte-identical output out).
 // compileSpec turns a spec into what the kit's data layer expects; planMigration (plan.js) diffs two specs.
+import { derivedIndexFields } from './indexes.js';
 import { normalizeSpec, titleFieldOf } from './normalize.js';
-import { TEXT_MAX, canonicalDatetime, createSqlText, isCanonicalDate } from './sql.js';
+import { ftsSqlText } from './fts.js';
+import { TEXT_MAX, canonicalDatetime, createSqlText, derivedIndexSqlText, isCanonicalDate } from './sql.js';
 
 export { normalizeSpec } from './normalize.js';
 export { TEXT_MAX } from './sql.js';
@@ -22,7 +24,13 @@ export { planMigration } from './plan.js';
  * @property {Record<string, Record<string, object>>} validators per table, the field rules the generic data API checks before a write
  * @property {Array<{ id: string, default: false, noun: string, plural: boolean }>} categories one cloud category per table (id = table id)
  * @property {Record<string, string>} titleFields per table, the field shown as the record title (`id` when none)
- * @property {string} createSql the full schema, for a first build and for preview scratch databases
+ * @property {string} createSql the full schema, for a first build and for preview scratch databases. Byte-identical to what the
+ *   compiler made before derived indexes existed: hashes of it are recorded in databases (app_schema_version, preview state)
+ * @property {string} indexSql the derived indexes (ADR-014) as CREATE INDEX IF NOT EXISTS lines, '' when there are none; apart
+ *   from createSql so that text never changes. A start with no migration files applies it after the migrations
+ * @property {string} ftsSql the full text indexes (ADR-016) as idempotent CREATE VIRTUAL TABLE and CREATE TRIGGER IF NOT EXISTS
+ *   statements, '' when no table has a text field; apart from createSql for the same reason. Applied beside indexSql, and
+ *   filled only for an index it created (applyFtsIndexes in server/db/migrate.js)
  */
 
 export const FIELD_COLTYPE = Object.freeze({
@@ -252,5 +260,7 @@ export function compileSpec(spec) {
     categories,
     titleFields,
     createSql: createSqlText(importOrder.map((id) => byId.get(id))),
+    indexSql: derivedIndexSqlText(importOrder, derivedIndexFields(s)),
+    ftsSql: ftsSqlText(importOrder.map((id) => byId.get(id))),
   };
 }

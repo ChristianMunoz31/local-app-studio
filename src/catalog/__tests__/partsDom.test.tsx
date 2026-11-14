@@ -2,8 +2,8 @@
 // handlers, href, style or a class name must not reach the markup. Only the editor's own props pass.
 import { cleanup, render } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
-import LayerRenderer from '@/vendor/ui-builder/components/ui/ui-builder/layer-renderer';
-import type { ComponentLayer } from '@/vendor/ui-builder/components/ui/ui-builder/types';
+import LayerRenderer from './catalogLayerRenderer.tsx';
+import type { ComponentLayer } from '../registryTypes.ts';
 import { CatalogDataContext } from '../context.tsx';
 import { editorDomProps } from '@local-app-studio/runtime/catalog/parts/editorProps.ts';
 import { buildRegistry } from '../registry.tsx';
@@ -58,6 +58,8 @@ const ALL_PARTS: Array<[string, ComponentLayer['children']]> = [
   ['Checklist', []],
   ['SortControl', []],
   ['QuickAdd', []],
+  ['GlobalSearch', []],
+  ['Kanban', []],
 ];
 
 describe('catalog parts and unknown props', () => {

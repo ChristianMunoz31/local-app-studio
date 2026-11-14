@@ -7,7 +7,7 @@ import { closeTestDb, createTestDb } from './helpers/testDb.js';
 
 vi.mock('../../loadEnv.js', () => ({}));
 // No Ollama: every local AI request is refused at the socket.
-vi.mock('node-fetch', () => ({
+vi.mock('../net/fetch.js', () => ({
   default: vi.fn(async () => {
     throw Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:11434'), { code: 'ECONNREFUSED' });
   }),

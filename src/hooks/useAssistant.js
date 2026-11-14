@@ -185,6 +185,7 @@ export function useAssistant() {
                 name: payload.name,
                 args: payload.args ?? {},
                 summary: payload.summary || toolLabel(payload.name),
+                origin: payload.origin ?? null,
                 at: Date.now(),
                 status: 'pending',
               },

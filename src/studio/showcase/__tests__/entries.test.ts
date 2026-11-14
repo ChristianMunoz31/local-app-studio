@@ -12,7 +12,7 @@ describe('part entries', () => {
     const ids = partEntries().map((e) => e.id);
     expect([...ids].sort()).toEqual([...shownTypes].sort());
     expect(new Set(ids).size).toBe(ids.length);
-    expect(ids).toHaveLength(31);
+    expect(ids).toHaveLength(33);
     for (const hidden of ['Page', 'Tab', 'Column']) expect(ids).not.toContain(hidden);
     expect([...SHOWCASE_HIDDEN_PARTS].sort()).toEqual(['Column', 'Page', 'Tab']);
   });

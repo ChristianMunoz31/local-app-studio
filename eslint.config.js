@@ -27,7 +27,7 @@ export default defineConfig([
     },
     rules: { 'no-restricted-syntax': ['error', ...ZOD_NAMED_Z] },
   },
-  // TypeScript (the catalog, the Studio UI, the spec layer, and the vendored ui-builder code with its tests): strict typescript-eslint rules.
+  // TypeScript (the catalog, the Studio UI and the spec layer, with their tests): strict typescript-eslint rules.
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
@@ -37,37 +37,6 @@ export default defineConfig([
     ],
     languageOptions: { globals: globals.browser },
     rules: { 'no-restricted-syntax': ['error', ...ZOD_NAMED_Z] },
-  },
-  // Vendored third-party code (src/vendor/**): lint-clean, but upstream style rules that it violates are off.
-  // Do not "fix" vendored files to satisfy these; see src/vendor/ui-builder/README.md.
-  {
-    files: ['src/vendor/**/*.{ts,tsx}'],
-    // Upstream eslint-disable comments target rules that are already off here.
-    linterOptions: { reportUnusedDisableDirectives: 'off' },
-    rules: {
-      '@typescript-eslint/no-explicit-any': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/no-empty-object-type': 'off',
-      '@typescript-eslint/no-unused-expressions': 'off',
-      '@typescript-eslint/ban-ts-comment': 'off',
-      '@typescript-eslint/no-require-imports': 'off',
-      'react-refresh/only-export-components': 'off',
-      'react-hooks/rules-of-hooks': 'off',
-      'react-hooks/exhaustive-deps': 'off',
-      'react-hooks/refs': 'off',
-      'react-hooks/set-state-in-effect': 'off',
-      'react-hooks/static-components': 'off',
-      'react-hooks/purity': 'off',
-      'react-hooks/immutability': 'off',
-      'react-hooks/preserve-manual-memoization': 'off',
-      'react-hooks/use-memo': 'off',
-      'react-hooks/incompatible-library': 'off',
-      'react-hooks/globals': 'off',
-      'react-hooks/error-boundaries': 'off',
-      'no-empty': 'off',
-      'no-case-declarations': 'off',
-      'no-useless-escape': 'off',
-    },
   },
   // Node-side files (API server, SQLite layer, scripts, tooling)
   {

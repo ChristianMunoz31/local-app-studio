@@ -17,6 +17,7 @@ import { toSummary } from './manifest.js';
 import { backupsDir } from './paths.js';
 import { inspectUpload, restoreBackup } from './restore.js';
 import { dismissAutoOffReminder, getAutoBackup, getBackupSettings, saveAutoBackup, saveBackupSettings } from './settings.js';
+import { getSecondCopyStatus, requestSecondCopy, saveCopyTo } from './secondCopy.js';
 
 const UPLOAD_TYPES = ['application/octet-stream', 'application/vnd.sqlite3'];
 const RESTORE_KEYS = new Set(['id', 'uploadToken', 'confirm']);
@@ -27,6 +28,7 @@ export function sendError(res, e) {
     return sendEnvelope(res, e.code, {
       status: e.status,
       message: e.message,
+      ...(typeof e.reason === 'string' && e.code === 'invalid_settings' ? { extra: { reason: e.reason } } : {}),
       ...(e.code === 'db_restoring' ? { headers: { 'Retry-After': '5' } } : {}),
     });
   }
@@ -77,6 +79,7 @@ export function registerBackupRoutes(app, { authEnabled = false } = {}) {
   const createLimiter = limiter(10);
   // Upload and restore share one budget.
   const restoreLimiter = limiter(10);
+  const copyToLimiter = limiter(30);
 
   app.get('/api/backups/status', ...guard, async (_req, res) => {
     try {
@@ -93,7 +96,10 @@ export function registerBackupRoutes(app, { authEnabled = false } = {}) {
         getBackupStatus(),
         getBackupSettings(),
       ]);
-      return res.json({ data: { backups, status, settings, location: backupsDir(), desktop: isDesktopMode() } });
+      // secondCopy is also inside status; the top level copy is the same object for convenience.
+      return res.json({
+        data: { backups, status, settings, secondCopy: status.secondCopy, location: backupsDir(), desktop: isDesktopMode() },
+      });
     } catch (e) {
       return sendError(res, e);
     }
@@ -102,7 +108,10 @@ export function registerBackupRoutes(app, { authEnabled = false } = {}) {
   app.post('/api/backups', ...guard, requireJson, createLimiter, async (_req, res) => {
     try {
       const { meta } = await createBackup({ kind: 'manual' });
-      return res.status(201).json({ data: { backup: toSummary(meta) } });
+      res.status(201).json({ data: { backup: toSummary(meta) } });
+      // After the answer, never awaited: the second copy runs off the request path.
+      void requestSecondCopy();
+      return undefined;
     } catch (e) {
       return sendError(res, e);
     }
@@ -127,6 +136,20 @@ export function registerBackupRoutes(app, { authEnabled = false } = {}) {
       // Only an off -> on change needs the scheduler brought forward.
       if (auto.enabled && !before.enabled) pokeBackupScheduler();
       return res.json({ data: auto });
+    } catch (e) {
+      return sendError(res, e);
+    }
+  });
+
+  // The second backup location: body { folder: string | null }. A new folder is copied to at once (the
+  // newest backup), after the answer is sent.
+  app.put('/api/backups/copy-to', ...guard, requireJson, copyToLimiter, async (req, res) => {
+    try {
+      await saveCopyTo(req.body);
+      const data = await getSecondCopyStatus();
+      res.json({ data });
+      void requestSecondCopy();
+      return undefined;
     } catch (e) {
       return sendError(res, e);
     }

@@ -5,11 +5,11 @@ import { PUBLIC_BUILD } from './helpers/proBuild.js';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 // Fixture categories (alpha shared by default, beta not) next to the real Studio one (features, shared by default).
 vi.mock('../modules/studio.data.js', (orig) => import('./helpers/fixtureModules.js').then((m) => m.withFixtureCategories(orig, { keepReal: true })));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { CLOUD_BASE_URL, CLOUD_HOST, CLOUD_KEY, configureCloud, installCloudAndOllama, resetCloud } from './helpers/fakeCloud.js';
 import { closeTestDb, createTestDb, resetDb } from './helpers/testDb.js';
 import { getCloudCategories, getCloudConsent } from '../ai/consent.js';

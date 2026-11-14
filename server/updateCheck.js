@@ -7,8 +7,8 @@
 // While the repo owner is still the template placeholder the check resolves to reason 'not_configured' with no request.
 // Upstream failures resolve to { status: 'unavailable' } and never throw.
 import fs from 'node:fs';
-import fetch from 'node-fetch';
 import { DEV_TAG_RE, DEV_VERSION_RE, getChannel } from './channel.js';
+import fetch from './net/fetch.js';
 import { assertNetworkEnabled } from './netPolicy.js';
 import { recordNetworkCall, statusFromHttp } from './networkCall.js';
 import { RELEASE_CONFIG, isPlaceholderRepo } from '../scripts/release/releaseConfig.js';

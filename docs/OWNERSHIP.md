@@ -152,7 +152,6 @@ The kit has **no** `/api/data` routes: the prefix appears only in the `no-store`
 | `server/role.js`, `server/entry.js` | the `preview` role |
 | `src/studio/**` | pages, components, hooks, services, the action editor and field overrides |
 | `src/modules/studio.jsx`, `studio.assistant.js` and their `.disabled` stubs | |
-| `src/vendor/ui-builder/**` | patches recorded in `src/vendor/ui-builder/README.md`; phase 2 imports `LayerRenderer` read-only. Since phase 7 nothing imports it; the folder stays, unused |
 | Tests: `server/__tests__/studio/**`, `src/studio/**/__tests__/**` | |
 | `docs/BUDGETS.md` Studio section | |
 

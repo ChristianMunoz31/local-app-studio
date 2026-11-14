@@ -30,6 +30,8 @@ export interface ChoiceProp {
   /** For a number: the bounds of the zod shape, repeated so the box can show them. */
   min?: number;
   max?: number;
+  /** Choosing the part's own default removes the prop instead of storing it, so a spec that never needed the setting stays baseline (a spec feature keyed on the prop, specCompat.js). */
+  removeAtDefault?: true;
 }
 
 const opts = (...pairs: Array<[string, string]>): ChoiceOption[] => pairs.map(([value, label]) => ({ value, label }));
@@ -77,6 +79,7 @@ export const CHOICE_PROPS: Readonly<Record<string, readonly ChoiceProp[]>> = Obj
     { prop: 'tone', label: 'Color', kind: 'choice', options: TONES.map((value) => ({ value, label: TONE_LABELS[value] })) },
   ],
   StatCard: [{ prop: 'stat', label: 'Show', kind: 'choice', options: [...opts(['count', 'How many']), numeric('sum', 'Total of a number'), numeric('avg', 'Average of a number'), numeric('min', 'Lowest of a number'), numeric('max', 'Highest of a number')] }],
+  DataTable: [{ prop: 'edit', label: 'Edit in the table', kind: 'choice', options: opts(['off', 'No'], ['cells', 'Click a cell to edit']), removeAtDefault: true }],
   Timeline: [{ prop: 'order', label: 'Order', kind: 'choice', options: opts(['newest', 'Newest first'], ['oldest', 'Oldest first']) }],
 });
 
@@ -92,7 +95,7 @@ type Shape = Readonly<Record<string, z.core.$ZodType>>;
 
 function shapeOf(type: string, ctx: PartContext): Shape | null {
   const def = getPartDefinition(type);
-  return def === undefined ? null : def.props(ctx).shape;
+  return def === undefined ? null : (def.designProps ?? def.props)(ctx).shape;
 }
 
 /** What the box shows now: the stored value, else the default of the part's zod shape ('' for pages that are not set). */
@@ -106,7 +109,7 @@ export function choiceValue(layer: LayoutLayer, c: ChoiceProp, ctx: PartContext)
 
 export type ChoiceRead = { ok: true; value: JsonValue | null } | { ok: false; message: string };
 
-/** The value to store for a typed or picked string, or why it is refused. `null` removes the prop (pages left empty). */
+/** The value to store for a typed or picked string, or why it is refused. `null` removes the prop (pages left empty, or a choice put back to its default when `removeAtDefault`). */
 export function readChoice(type: string, c: ChoiceProp, raw: string, ctx: PartContext): ChoiceRead {
   const shape = shapeOf(type, ctx);
   if (shape === null || !Object.hasOwn(shape, c.prop)) return { ok: false, message: 'That setting cannot be changed.' };
@@ -122,5 +125,9 @@ export function readChoice(type: string, c: ChoiceProp, raw: string, ctx: PartCo
     return z.safeParse(schema, ids).success ? { ok: true, value: ids } : { ok: false, message: 'Pick 1 to 8 pages that can be opened without a record.' };
   }
   if (!c.options.some((o) => o.value === raw) || !z.safeParse(schema, raw).success) return { ok: false, message: 'Pick one of the choices.' };
+  if (c.removeAtDefault === true) {
+    const fallback = z.safeParse(schema, undefined);
+    if (fallback.success && fallback.data === raw) return { ok: true, value: null };
+  }
   return { ok: true, value: raw };
 }

@@ -199,7 +199,7 @@ const orderEntry = (compiled, table, { field, dir }) => {
  * @param {Record<string, unknown>} query req.query
  * @param {{ stats?: boolean }} [opts] stats: sort, limit and offset are ignored
  * @returns {{ ok: true, where: object | undefined, search: { term: string, columns: string[] } | undefined,
- *   orderBy: object[], limit: number, offset: number } | { ok: false, field: string, message: string }}
+ *   orderBy: object[], limit: number, offset: number, wantTotal: boolean } | { ok: false, field: string, message: string }}
  */
 export function parseDataQuery(compiled, spec, table, query, { stats = false } = {}) {
   const q = isPlainObject(query) ? query : {};
@@ -270,10 +270,18 @@ export function parseDataQuery(compiled, spec, table, query, { stats = false } =
   const offset = parseInteger(q.offset, 'offset', 0, MAX_OFFSET, 0);
   if (!offset.ok) return offset;
 
+  // total=0 skips the row count (the list answers without a total); total=1 or no flag keeps it.
+  let wantTotal = true;
+  if (q.total !== undefined) {
+    if (q.total !== '0' && q.total !== '1') return bad('total', 'total must be 0 or 1.');
+    wantTotal = q.total === '1';
+  }
+
   return {
     ok: true,
     where,
     search,
+    wantTotal,
     orderBy: order.map((o) => orderEntry(compiled, table, o)),
     limit: limit.value,
     offset: offset.value,

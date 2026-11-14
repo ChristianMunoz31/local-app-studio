@@ -1,16 +1,17 @@
 // planMigration (ADR-004): the app-track migration from the last built spec to the next one. Pure and deterministic.
 import { checkSpecShape, computeImportOrder } from './compile.js';
+import { createScriptText, dropFtsStatements, ftsColumns, isFtsField, recreateFtsStatements, tableBlockWithFts } from './fts.js';
+import { derivedIndexFields } from './indexes.js';
 import { normalizeSpec } from './normalize.js';
 import {
   columnLine,
   createIndexStatement,
-  createSqlText,
   createTableStatement,
   defaultLiteral,
+  derivedIndexStatements,
   fileText,
   indexStatements,
   quoteId,
-  tableBlock,
 } from './sql.js';
 
 const MAX_ISSUES = 20;
@@ -52,25 +53,29 @@ function compareField(before, after) {
   return { destructive: null, rebuild };
 }
 
-function rebuildBlock(table, builtFieldIds) {
+function rebuildBlock(table, builtFieldIds, derived) {
   const kept = table.fields.filter((f) => builtFieldIds.has(f.id)).map((f) => f.id);
   const cols = ['id', ...kept, 'created_at', 'updated_at'].map(quoteId).join(', ');
   const tmp = `${table.id}:new`;
   return [
     createTableStatement(table, tmp),
     `INSERT INTO ${quoteId(tmp)} (${cols}) SELECT ${cols} FROM ${quoteId(table.id)};`,
+    ...(ftsColumns(table).length ? dropFtsStatements(table) : []),
     `DROP TABLE ${quoteId(table.id)};`,
     `ALTER TABLE ${quoteId(tmp)} RENAME TO ${quoteId(table.id)};`,
-    ...indexStatements(table),
+    ...indexStatements(table, derived),
+    ...recreateFtsStatements(table, { drop: false }),
   ].join('\n');
 }
 
-function alterBlock(table, newFields) {
+function alterBlock(table, newFields, derived) {
   const lines = [];
   for (const f of newFields) {
     lines.push(`ALTER TABLE ${quoteId(table.id)} ADD COLUMN ${columnLine(f)};`);
     if (f.type === 'reference') lines.push(createIndexStatement(table.id, f.id));
   }
+  lines.push(...derivedIndexStatements(table.id, derived));
+  if (newFields.some(isFtsField)) lines.push(...recreateFtsStatements(table));
   return lines.join('\n');
 }
 
@@ -98,8 +103,9 @@ export function planMigration(builtSpec, nextSpec, opts = {}) {
 
   const order = computeImportOrder(next.tables);
   const nextById = new Map(next.tables.map((t) => [t.id, t]));
+  const nextIndexes = derivedIndexFields(next);
   if (!built) {
-    return { ok: true, file: { name, sql: createSqlText(order.map((id) => nextById.get(id))) } };
+    return { ok: true, file: { name, sql: createScriptText(order.map((id) => nextById.get(id)), nextIndexes) } };
   }
 
   const issues = [];
@@ -144,16 +150,31 @@ export function planMigration(builtSpec, nextSpec, opts = {}) {
   });
   if (issues.length) return { ok: false, issues: issues.slice(0, MAX_ISSUES) };
 
+  // Derived indexes (ADR-014) are additive and idempotent (CREATE INDEX IF NOT EXISTS), and never dropped. An index a page
+  // newly asks for is added. An app built before the compiler made them has none, and the built spec cannot say so, so any
+  // other schema change also asserts every derived index of the tables it touches or keeps: that is how an existing app
+  // catches up. A change of pages alone adds only the indexes that are new.
+  const builtIndexes = derivedIndexFields(built);
+  const schemaChanged = order.some((id) => {
+    const change = changes.get(id);
+    return !change || change.rebuild || change.newFields.length > 0;
+  });
   const blocks = [];
   let anyRebuild = false;
   for (const id of order) {
     const table = nextById.get(id);
     const change = changes.get(id);
-    if (!change) blocks.push(tableBlock(table));
+    const derived = nextIndexes.get(id) ?? [];
+    if (!change) blocks.push(tableBlockWithFts(table, derived));
     else if (change.rebuild) {
       anyRebuild = true;
-      blocks.push(rebuildBlock(table, change.builtIds));
-    } else if (change.newFields.length) blocks.push(alterBlock(table, change.newFields));
+      blocks.push(rebuildBlock(table, change.builtIds, derived));
+    } else {
+      const before = new Set(builtIndexes.get(id) ?? []);
+      const wanted = schemaChanged ? derived : derived.filter((f) => !before.has(f));
+      if (change.newFields.length) blocks.push(alterBlock(table, change.newFields, wanted));
+      else if (wanted.length) blocks.push(derivedIndexStatements(table.id, wanted).join('\n'));
+    }
   }
   if (!blocks.length) return { ok: true, file: null };
   return { ok: true, file: { name, sql: fileText(anyRebuild ? 'rebuild' : 'alter', blocks) } };

@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { DatabaseSync } from 'node:sqlite';
 import { checkSpecShape, compileSpec, normalizeSpec, planMigration } from '../../spec/compile.js';
+import { createFtsStatements } from '../../spec/fts.js';
 
 const FIXTURE = new URL('../../../packages/runtime/src/spec/fixtures/crew-roster.json', import.meta.url);
 const GOLDEN = new URL('./golden/', import.meta.url);
@@ -79,8 +80,12 @@ describe('normalizeSpec', () => {
 
 describe('compileSpec golden files', () => {
   it('matches the create script and compiled JSON byte for byte', () => {
-    const { createSql, ...rest } = compileSpec(fixture());
+    const { createSql, indexSql, ftsSql, ...rest } = compileSpec(fixture());
     golden('crew-roster.create.sql', createSql);
+    // ADR-014: createSql stays what it was before derived indexes; the derived ones are their own text.
+    golden('crew-roster.index.sql', indexSql);
+    // ADR-016: the full text indexes are their own text too, idempotent statements.
+    golden('crew-roster.fts.sql', ftsSql);
     golden('crew-roster.compiled.json', `${JSON.stringify(rest, null, 2)}\n`);
   });
 
@@ -195,7 +200,17 @@ describe('planMigration', () => {
     const plan = planMigration(null, fixture());
     expect(plan.ok).toBe(true);
     expect(plan.file.name).toBe('001_app.sql');
-    expect(plan.file.sql).toBe(compileSpec(fixture()).createSql);
+    // the first build is createSql plus the derived indexes (ADR-014) and the full text indexes (ADR-016): without those lines
+    // it is createSql byte for byte
+    const compiled = compileSpec(fixture());
+    const derived = compiled.indexSql.split('\n').filter((l) => l !== '');
+    expect(derived.length).toBeGreaterThan(0);
+    const ftsBlocks = fixture().tables.map((t) => createFtsStatements(t).join('\n')).filter((b) => b !== '');
+    expect(ftsBlocks.length).toBeGreaterThan(0);
+    const withoutFts = ftsBlocks.reduce((sql, block) => sql.replace(`\n${block}`, ''), plan.file.sql);
+    expect(plan.file.sql.length).toBeGreaterThan(withoutFts.length);
+    expect(withoutFts.split('\n').filter((l) => !derived.includes(l)).join('\n')).toBe(compiled.createSql);
+    expect(withoutFts.split('\n').filter((l) => derived.includes(l))).toEqual(derived);
     expect(planMigration(null, fixture(), { version: 7 }).file.name).toBe('007_app.sql');
   });
 

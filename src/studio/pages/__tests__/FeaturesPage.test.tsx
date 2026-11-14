@@ -72,8 +72,11 @@ describe('FeaturesPage', () => {
     expect(screen.queryByRole('button', { name: 'Show details for Page' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Show details for Tab' })).toBeNull();
     expect(screen.queryByRole('button', { name: 'Show details for Column' })).toBeNull();
-    expect(screen.getByTestId('features-count').textContent).toBe('33 shown');
-    await waitFor(() => expect(screen.getAllByTestId('preview-stub').length).toBe(33));
+    // Phase 31 added two part tiles: Global search (Input) and Board (Records), so 33 became 35.
+    expect(within(screen.getByRole('region', { name: 'Input' })).getByRole('button', { name: 'Show details for Global search' })).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Records' })).getByRole('button', { name: 'Show details for Board' })).toBeTruthy();
+    expect(screen.getByTestId('features-count').textContent).toBe('35 shown');
+    await waitFor(() => expect(screen.getAllByTestId('preview-stub').length).toBe(35));
   });
 
   it('marks tiles that show data with Sample data, and only those', async () => {
@@ -345,7 +348,7 @@ describe('FeaturesPage', () => {
     const data = screen.getByRole('region', { name: 'Records' });
     expect(within(data).getByRole('heading', { level: 3 }).textContent).toMatch(/^Records \(\d+\)$/);
     expect(within(data).getByRole('heading', { level: 4, name: /^Show \(\d+\)$/ })).toBeTruthy();
-    expect(screen.getByRole('radio', { name: 'All (33)' })).toBeTruthy();
+    expect(screen.getByRole('radio', { name: 'All (35)' })).toBeTruthy();
     expect(screen.getByRole('radio', { name: /^Navigation \(4\)$/ })).toBeTruthy();
   });
 

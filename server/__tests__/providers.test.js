@@ -1,11 +1,11 @@
 // Local AI providers and the registry: native Ollama transport (NDJSON streaming, tool-call
 // conversion, fixed paths) and model resolution (auto choice, settings > env > auto,
-// num_ctx, availability errors). node-fetch is mocked with a fake Ollama; nothing real runs.
+// num_ctx, availability errors). the fetch seam is mocked with a fake Ollama; nothing real runs.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { MODELS, hangingChat, installFakeOllama, textReply, toolReply } from './helpers/fakeOllama.js';
 import { fromOllamaToolCalls, ollamaChatStream, toOllamaMessages } from '../ai/providers/ollama.js';
 import {

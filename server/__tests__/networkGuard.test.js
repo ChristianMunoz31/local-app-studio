@@ -1,9 +1,10 @@
 // Self-test for the test network guard (server/__tests__/setup/networkGuard.js).
-// Uses real node-fetch (no mock) on purpose: the guard must stop the connection before it leaves.
+// Uses the real fetch seam (server/net/fetch.js, no mock) on purpose: the guard must stop the connection before it leaves,
+// both on the built-in fetch path and on the node:http(s) path the seam takes when a caller passes an agent.
 import { describe, expect, it } from 'vitest';
 import http from 'node:http';
 import net from 'node:net';
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { allowLoopbackPort, portFromOllamaHost, takeNetworkViolations } from './setup/networkGuard.js';
 
 // A pooled keep-alive socket from an earlier allowed connection would skip Socket#connect; use fresh agents.
@@ -15,7 +16,7 @@ function listen(server, port = 0) {
 const close = (server) => new Promise((resolve) => server.close(resolve));
 
 describe('networkGuard', () => {
-  it('blocks node-fetch to loopback Ollama port 11434 and records it', async () => {
+  it('blocks an agent request to loopback Ollama port 11434 and records it', async () => {
     await expect(fetch('http://127.0.0.1:11434/api/version', FRESH)).rejects.toMatchObject({ code: 'ENETBLOCKED' });
     const v = takeNetworkViolations();
     expect(v).toHaveLength(1);
@@ -29,11 +30,18 @@ describe('networkGuard', () => {
     expect(takeNetworkViolations()).toHaveLength(3);
   });
 
-  it('blocks node-fetch to a remote host', async () => {
-    await expect(fetch('http://192.0.2.1/')).rejects.toMatchObject({ code: 'ENETBLOCKED' });
+  it('blocks an agent request to a remote host', async () => {
+    await expect(fetch('http://192.0.2.1/', FRESH)).rejects.toMatchObject({ code: 'ENETBLOCKED' });
     const v = takeNetworkViolations();
     expect(v).toHaveLength(1);
     expect(v[0]).toMatchObject({ host: '192.0.2.1', port: 80, via: 'socket' });
+  });
+
+  it('blocks the seam built-in path to a remote host before any socket is opened', async () => {
+    await expect(fetch('http://192.0.2.1/')).rejects.toMatchObject({ code: 'ENETBLOCKED' });
+    const v = takeNetworkViolations();
+    expect(v).toHaveLength(1);
+    expect(v[0]).toMatchObject({ host: '192.0.2.1', port: 80, via: 'fetch' });
   });
 
   it('blocks global fetch to blocked targets immediately and records it', async () => {

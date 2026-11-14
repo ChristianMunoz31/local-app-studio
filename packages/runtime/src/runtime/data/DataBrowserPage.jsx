@@ -99,6 +99,13 @@ export default function DataBrowserPage({ spec, apiBase = '/api' }) {
           <DataExportControl />
           <ImportControl />
         </div>
+        <p className="mt-4 text-xs text-slate-slate400">
+          Backups are in{' '}
+          <Link to={{ pathname: '/settings', hash: '#data-storage' }} className={`underline ${FOCUS}`}>
+            Settings
+          </Link>
+          .
+        </p>
       </SectionCard>
     </div>
   );

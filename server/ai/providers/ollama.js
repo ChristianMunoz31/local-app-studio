@@ -2,7 +2,7 @@
 // /api/show, /api/chat, /api/pull); user input never becomes part of a path. Redirects are refused.
 // Chat always streams (NDJSON) so the first-token timeout works the same everywhere.
 // Callers speak OpenAI-shaped messages; this module converts both ways.
-import fetch from 'node-fetch';
+import fetch from '../../net/fetch.js';
 import {
   BodyTooLargeError,
   MAX_ERROR_BODY_BYTES,

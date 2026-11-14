@@ -7,13 +7,13 @@ import { PUBLIC_BUILD } from './helpers/proBuild.js';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 vi.mock('../ai/providers/openaiCompat.js', async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, openaiCompatChatStream: vi.fn(actual.openaiCompatChatStream) };
 });
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { openaiCompatChatStream } from '../ai/providers/openaiCompat.js';
 import { CLOUD_BASE_URL, CLOUD_HOST, CLOUD_KEY, configureCloud, installCloudAndOllama, resetCloud } from './helpers/fakeCloud.js';
 import { closeTestDb, createTestDb, resetDb } from './helpers/testDb.js';

@@ -1,7 +1,7 @@
 // Cloud AI in a built app (runtime mode, Crew Roster fixture): one cloud category per spec table, enforced by canonical
 // tool name. Crews shared, people withheld: the people tool answers with the not-shared placeholder and never runs, its
 // data and its turn never reach the provider, and a write to a withheld table is neither run nor parked.
-// Fake provider behind a mocked node-fetch; nothing real is contacted.
+// Fake provider behind a mocked fetch seam; nothing real is contacted.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PUBLIC_BUILD } from '../helpers/proBuild.js';
 
@@ -14,9 +14,9 @@ vi.mock('../../license/index.js', async (importOriginal) => (await import('../he
 import request from 'supertest';
 
 vi.mock('../../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../../net/fetch.js';
 import { textReply, toolReply } from '../helpers/fakeOllama.js';
 import { CLOUD_HOST, configureCloud, installCloudAndOllama, resetCloud } from '../helpers/fakeCloud.js';
 import { closeTestDb, createTestDb, resetDb, rowsOf, seedDb } from '../helpers/testDb.js';

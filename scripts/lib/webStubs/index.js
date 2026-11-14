@@ -1,9 +1,8 @@
-// Web build stubs: a Vite plugin that swaps three installed modules for small stubs, for `vite build` of the web app only (vite.config.js passes
+// Web build stubs: a Vite plugin that swaps two installed modules for small stubs, for `vite build` of the web app only (vite.config.js passes
 // it when command is "build"). Vitest, the esbuild sidecar bundles (scripts/desktop/buildSidecar.js) and Node never see it.
 //   1. zod 4 classic puts toJSONSchema on every schema, which pulls core/to-json-schema.js and core/json-schema-processors.js into the web chunk
 //      (about 5.2 KiB gzip). Only pro/src/catalog/modelSchema.ts (server code) calls it.
-//   2. remark-gfm registers a to-markdown extension that pulls mdast-util-to-markdown and the five gfm ToMarkdown factories into the lazy Markdown
-//      chunk. react-markdown only parses, so the stub for mdast-util-gfm keeps gfmFromMarkdown and returns no to-markdown extensions.
+//   (The mdast-util-gfm stub went with react-markdown and remark-gfm in phase 30; the Assistant markdown renderer is in-repo now.)
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -15,10 +14,8 @@ export const WEB_STUB_FILES = Object.freeze({
   'node_modules/zod/v4/core/json-schema-processors.js': here('./zodJsonSchemaProcessors.js'),
 });
 
-/** The bare specifier replaced for remark-gfm and the stub file it gets. */
-export const WEB_STUB_BARE = Object.freeze({
-  'mdast-util-gfm': here('./mdastUtilGfm.js'),
-});
+/** Bare specifiers replaced by a stub file (none since phase 30). */
+export const WEB_STUB_BARE = Object.freeze({});
 
 const stubFor = (source, importer) => {
   if (Object.hasOwn(WEB_STUB_BARE, source)) return WEB_STUB_BARE[source];

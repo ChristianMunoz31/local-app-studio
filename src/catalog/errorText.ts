@@ -26,10 +26,12 @@ export const ERROR_TEXT = {
   goHome: 'Go to the home page',
   exportPreparing: 'Preparing export...',
   exportReady: 'Export ready. Check your downloads.',
+  exportPartial: 'The export is incomplete: some rows are missing. Try again.',
   exportRateLimited: 'Too many exports. Try again in a few minutes.',
   exportTooLarge: 'This table is too large to export in one file. Remove rows you no longer need, then try again.',
   noRowsMatch: 'No rows match. Change the search or the filters.',
   checklistCannot: 'This list cannot be checked off here. Open a record to change it.',
+  kanbanCannot: 'This table has no choice field to make columns from.',
   quickAddCannot: 'This list cannot take quick entries here. Use a form to add to it.',
   noDataConnected: 'No data is connected here. Reload the app.',
 } as const;

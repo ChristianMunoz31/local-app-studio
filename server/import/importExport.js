@@ -22,8 +22,9 @@ export const IMPORT_MAX_ENTRY_BYTES = 64 * 1024 * 1024;
 export const IMPORT_MAX_TOTAL_BYTES = 256 * 1024 * 1024; // CLI default
 export const IMPORT_API_MAX_TOTAL_BYTES = 64 * 1024 * 1024; // HTTP path: the archive is inflated in memory
 // app_state keys an archive may never set: restoring them could silently enable outbound features
-// (network.optIn), roll back the license clock or trial, replace the license activation, or switch automatic backups off or on (backup.auto).
-export const PROTECTED_APP_STATE_KEYS = new Set(['network.optIn', 'license.clock', 'license.trial', 'license.trialNotices', 'license.activation', 'backup.auto']);
+// (network.optIn), roll back the license clock or trial, replace the license activation, switch automatic backups off or on (backup.auto),
+// or point the second backup copy at another folder (backup.copyTo).
+export const PROTECTED_APP_STATE_KEYS = new Set(['network.optIn', 'license.clock', 'license.trial', 'license.trialNotices', 'license.activation', 'backup.auto', 'backup.copyTo']);
 // Cloud AI consent, categories and hint (`ai.cloudConsent`, `ai.cloudCategories`, `ai.cloudHint`)
 // are written only by the consent routes: an archive or a generic state write that set them would
 // turn cloud AI on, or widen what it sees, without the consent flow.

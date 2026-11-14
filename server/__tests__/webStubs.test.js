@@ -43,14 +43,15 @@ describe('web build stubs', () => {
     }
   });
 
-  it('the plugin resolves zod relative imports and the gfm specifier to the stubs, and nothing else', () => {
+  it('the plugin resolves zod relative imports to the stubs, and nothing else', () => {
     const plugin = webStubsPlugin();
     const zodCore = path.join(ROOT, 'node_modules', 'zod', 'v4', 'core');
     const processors = plugin.resolveId('./json-schema-processors.js', path.join(zodCore, 'json-schema-generator.js'));
     expect(processors).toBe(WEB_STUB_FILES['node_modules/zod/v4/core/json-schema-processors.js']);
     const classic = path.join(ROOT, 'node_modules', 'zod', 'v4', 'classic', 'schemas.js');
     expect(plugin.resolveId('../core/to-json-schema.js', classic)).toBe(WEB_STUB_FILES['node_modules/zod/v4/core/to-json-schema.js']);
-    expect(plugin.resolveId('mdast-util-gfm', path.join(ROOT, 'node_modules', 'remark-gfm', 'lib', 'index.js'))).toBe(WEB_STUB_BARE['mdast-util-gfm']);
+    // The gfm stub went with remark-gfm (phase 30): the specifier is no longer swapped.
+    expect(plugin.resolveId('mdast-util-gfm', path.join(ROOT, 'src', 'other', 'x.js'))).toBeNull();
     expect(plugin.resolveId('./util.js', path.join(zodCore, 'schemas.js'))).toBeNull();
     expect(plugin.resolveId('mdast-util-gfm-table', path.join(ROOT, 'node_modules', 'mdast-util-gfm', 'lib', 'index.js'))).toBeNull();
     expect(plugin.resolveId('./to-json-schema.js', path.join(ROOT, 'src', 'other', 'x.js'))).toBeNull();
@@ -93,14 +94,5 @@ describe('web build stubs', () => {
     const real = body(path.join(ROOT, 'node_modules/zod/v4/core/json-schema-processors.js'));
     const stub = body(WEB_STUB_FILES['node_modules/zod/v4/core/json-schema-processors.js']);
     expect(stub).toBe(real);
-  });
-
-  it('the gfm stub keeps the five parse extensions and has no to-markdown extension', async () => {
-    const mod = await import(pathToFileURL(WEB_STUB_BARE['mdast-util-gfm']).href);
-    const real = await import('mdast-util-gfm');
-    expect(mod.gfmFromMarkdown()).toHaveLength(5);
-    // Same extension objects, in the same order, as the real package: tables, autolinks, strikethrough and task lists parse as before.
-    expect(mod.gfmFromMarkdown()).toEqual(real.gfmFromMarkdown());
-    expect(mod.gfmToMarkdown()).toEqual({ extensions: [] });
   });
 });

@@ -5,6 +5,7 @@ import { getDb, withTransaction } from './index.js';
 import { DbError, toDbError } from './errors.js';
 import { encodeRow, decodeRow, encodeValue } from './codec.js';
 import { getTable } from './tables.js';
+import { prepareCached } from './statementCache.js';
 import { SLOW_QUERY_MS, isDebug, log } from '../log.js';
 
 const OPS = Object.freeze({ eq: '=', ne: '<>', gt: '>', gte: '>=', lt: '<', lte: '<=' });
@@ -219,8 +220,7 @@ export function select(table, { columns = '*', where, search, orderBy = [], limi
   const lim = buildLimit(limit, offset, params);
   const sql = `SELECT ${list} FROM ${q(table)}${w}${order}${lim}`;
   return run(() =>
-    (db ?? getDb())
-      .prepare(sql)
+    prepareCached(db ?? getDb(), sql)
       .all(...params)
       .map((r) => decodeRow(table, r)),
     'select',
@@ -239,7 +239,7 @@ export function count(table, { where, search, db } = {}) {
   const params = [];
   const w = whereClause(def, table, where, search, params);
   const sql = `SELECT COUNT(*) AS n FROM ${q(table)}${w}`;
-  return run(() => Number((db ?? getDb()).prepare(sql).get(...params).n), 'count', table);
+  return run(() => Number(prepareCached(db ?? getDb(), sql).get(...params).n), 'count', table);
 }
 
 const GROUP_KEY_TYPES = new Set(['text', 'boolean', 'date', 'timestamptz', 'uuid']);
@@ -283,9 +283,9 @@ export function groupStats(table, { column, bucket, measureColumn, where, search
   const totalSql = `SELECT COUNT(*) AS c, ${measure}, COUNT(DISTINCT ${key}) + (COUNT(*) > COUNT(${key})) AS g FROM ${q(table)}${w}`;
   return run(() => {
     const handle = db ?? getDb();
-    const rows = handle.prepare(groupSql).all(...params, limit);
-    if (byKey) rows.push(...handle.prepare(emptySql).all(...params));
-    const t = handle.prepare(totalSql).get(...params);
+    const rows = prepareCached(handle, groupSql).all(...params, limit);
+    if (byKey) rows.push(...prepareCached(handle, emptySql).all(...params));
+    const t = prepareCached(handle, totalSql).get(...params);
     return {
       groups: rows.map((r) => ({
         key: r.k === null ? null : type === 'boolean' ? Number(r.k) === 1 : String(r.k),
@@ -303,7 +303,7 @@ export function insert(table, row, { db } = {}) {
   const def = getTable(table);
   const { columns, values } = encodeRow(table, row, { forInsert: true });
   const sql = `INSERT INTO ${q(table)} (${columns.map(q).join(', ')}) VALUES (${columns.map(() => '?').join(', ')}) RETURNING ${allColumns(def)}`;
-  return run(() => decodeRow(table, (db ?? getDb()).prepare(sql).get(...values)), 'insert', table);
+  return run(() => decodeRow(table, prepareCached(db ?? getDb(), sql).get(...values)), 'insert', table);
 }
 
 /** @returns {object[]} */
@@ -328,8 +328,7 @@ export function update(table, patch, { where, db } = {}) {
   const w = whereClause(def, table, where, undefined, params);
   const sql = `UPDATE ${q(table)} SET ${columns.map((c) => `${q(c)} = ?`).join(', ')}${w} RETURNING ${allColumns(def)}`;
   return run(() =>
-    (db ?? getDb())
-      .prepare(sql)
+    prepareCached(db ?? getDb(), sql)
       .all(...params)
       .map((r) => decodeRow(table, r)),
     'update',
@@ -358,7 +357,7 @@ export function upsert(table, row, { conflict, preserve = [], db } = {}) {
   const sql =
     `INSERT INTO ${q(table)} (${columns.map(q).join(', ')}) VALUES (${columns.map(() => '?').join(', ')}) ` +
     `ON CONFLICT (${target.map(q).join(', ')}) DO UPDATE SET ${setSql} RETURNING ${allColumns(def)}`;
-  return run(() => decodeRow(table, (db ?? getDb()).prepare(sql).get(...values)), 'upsert', table);
+  return run(() => decodeRow(table, prepareCached(db ?? getDb(), sql).get(...values)), 'upsert', table);
 }
 
 /** @returns {number} rows deleted */
@@ -370,5 +369,120 @@ export function remove(table, { where, db } = {}) {
   const params = [];
   const w = whereClause(def, table, where, undefined, params);
   const sql = `DELETE FROM ${q(table)}${w}`;
-  return run(() => Number((db ?? getDb()).prepare(sql).run(...params).changes), 'delete', table);
+  return run(() => Number(prepareCached(db ?? getDb(), sql).run(...params).changes), 'delete', table);
+}
+
+// ---------------------------------------------------------------------------------------------
+// Full text search (ADR-016). A spec table with a text field has an FTS5 index "fts:<table>" (trigram, external content,
+// kept in step by triggers). The search is the index as a prefilter (`rowid IN (... MATCH ?)`) and then the very same
+// app_icontains test as the LIKE path, so the rows and the total are the ones the LIKE path gives and the index can only
+// make the query faster. A term of fewer than 3 characters, a term with a NUL, and a table without the index (an app built
+// before it) use the LIKE path. Everything here only adds to the file: select and count are unchanged.
+// The statements go through the same prepared statement cache as select and count (statementCache.js).
+// ---------------------------------------------------------------------------------------------
+
+const FTS_MIN_CHARS = 3;
+const ftsName = (table) => `fts:${table}`;
+/** @type {WeakMap<object, Map<string, { version: number, columns: Set<string> | null }>>} */
+const ftsCache = new WeakMap();
+
+/** The columns of a table's index, or null when it has none. Cached per handle and per schema version. */
+function ftsIndexColumns(table, db) {
+  let byTable = ftsCache.get(db);
+  if (!byTable) {
+    byTable = new Map();
+    ftsCache.set(db, byTable);
+  }
+  const version = Number(prepareCached(db, 'PRAGMA schema_version').get().schema_version);
+  const hit = byTable.get(table);
+  if (hit && hit.version === version) return hit.columns;
+  let columns = null;
+  if (db.prepare("SELECT 1 AS x FROM sqlite_master WHERE type = 'table' AND name = ?").get(ftsName(table))) {
+    columns = new Set(
+      db
+        .prepare('SELECT name FROM pragma_table_info(?)')
+        .all(ftsName(table))
+        .map((r) => r.name),
+    );
+  }
+  byTable.set(table, { version, columns });
+  return columns;
+}
+
+/**
+ * True when the table has a full text index (and, when columns are given, it covers every one of them).
+ * @param {string} table an allowlisted table
+ * @param {{ db?: object, columns?: string[] }} [opts]
+ * @returns {boolean}
+ */
+export function hasFtsIndex(table, { db, columns } = {}) {
+  getTable(table);
+  const have = run(() => ftsIndexColumns(table, db ?? getDb()), 'fts-probe', table);
+  if (have === null) return false;
+  return columns === undefined || columns.every((c) => have.has(c));
+}
+
+/**
+ * The MATCH string for a search: a column filter of the searched columns and the term as one phrase with every double
+ * quote doubled. Null when the LIKE path must answer (no term, a short term, a NUL, no index, a column not indexed).
+ * @param {string} table
+ * @param {{ term?: unknown, columns?: unknown } | undefined} search
+ * @param {object} db
+ * @returns {string | null}
+ */
+function ftsMatchFor(table, search, db) {
+  if (!search || !Array.isArray(search.columns) || search.columns.length === 0) return null;
+  const term = typeof search.term === 'string' ? search.term : '';
+  if (term.trim() === '' || term.includes('\u0000') || [...term].length < FTS_MIN_CHARS) return null;
+  const def = getTable(table);
+  for (const c of search.columns) colType(def, table, c);
+  if (!hasFtsIndex(table, { db, columns: search.columns })) return null;
+  return `{${[...new Set(search.columns)].map((c) => `"${c}"`).join(' ')}} : "${term.replaceAll('"', '""')}"`;
+}
+
+function ftsWhereClause(def, table, where, search, match, params) {
+  const base = whereClause(def, table, where, search, params);
+  params.push(match);
+  const index = `rowid IN (SELECT rowid FROM ${q(ftsName(table))} WHERE ${q(ftsName(table))} MATCH ?)`;
+  return base === '' ? ` WHERE ${index}` : `${base} AND ${index}`;
+}
+
+/**
+ * select with the full text index as a prefilter of the search. Same options and same rows as select.
+ * @returns {object[]}
+ */
+export function selectSearch(table, opts = {}) {
+  const { columns = '*', where, search, orderBy = [], limit, offset = 0, db } = opts;
+  const match = ftsMatchFor(table, search, db ?? getDb());
+  if (match === null) return select(table, opts);
+  const def = getTable(table);
+  const params = [];
+  const list = selectList(def, table, columns);
+  const w = ftsWhereClause(def, table, where, search, match, params);
+  const order = buildOrder(def, table, orderBy);
+  const lim = buildLimit(limit, offset, params);
+  const sql = `SELECT ${list} FROM ${q(table)}${w}${order}${lim}`;
+  return run(
+    () =>
+      prepareCached(db ?? getDb(), sql)
+        .all(...params)
+        .map((r) => decodeRow(table, r)),
+    'select',
+    table,
+  );
+}
+
+/**
+ * count with the full text index as a prefilter of the search. Same options and same number as count.
+ * @returns {number}
+ */
+export function countSearch(table, opts = {}) {
+  const { where, search, db } = opts;
+  const match = ftsMatchFor(table, search, db ?? getDb());
+  if (match === null) return count(table, opts);
+  const def = getTable(table);
+  const params = [];
+  const w = ftsWhereClause(def, table, where, search, match, params);
+  const sql = `SELECT COUNT(*) AS n FROM ${q(table)}${w}`;
+  return run(() => Number(prepareCached(db ?? getDb(), sql).get(...params).n), 'count', table);
 }

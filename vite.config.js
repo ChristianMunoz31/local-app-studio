@@ -11,6 +11,24 @@ import { proSeamVitePlugin } from './scripts/lib/proSeam.js'
 import { webStubsPlugin } from './scripts/lib/webStubs/index.js'
 import { readBakedSpecJson, resolveBuildAppMode, studioUiPlugin } from './scripts/desktop/modeBuild.js'
 
+// Names for the chunks rolldown makes on its own. The groups below name the kit's shared code, but they cannot hold the Studio, spec, catalog
+// and zod code: a group also swallows what its modules import, which pulled the kit and zod into the entry's imports (measured in phase 31:
+// initial JS 130 KiB became 321 KiB). So those modules stay out of every group and rolldown puts the ones two lazy routes share into
+// automatic common chunks. Rolldown names such a chunk after one of its modules: the 201 KB chunk of zod, the spec schema, the catalog and
+// the Studio libraries was called "useDocumentTitle" after a 261 byte hook that happens to be last in it. The names below say what is in
+// a common chunk: `spec-shared` (the one with zod), `studio-<module>` (Studio code only, absent from a built app, which has no src/studio)
+// and `spec-<module>` (catalog or spec code without zod). Only file names change: nothing moves between chunks, so sizes and the guards
+// in server/__tests__/modules/chunking.test.js are unaffected. A route chunk (a dynamic entry) keeps the name of its page.
+const GROUP_NAMES = new Set(['react', 'editor-libs', 'shared'])
+const has = (chunk, test) => chunk.moduleIds.some((id) => test.test(id.replaceAll('\\', '/')))
+const chunkFileName = (chunk) => {
+  if (chunk.isEntry || chunk.isDynamicEntry || GROUP_NAMES.has(chunk.name)) return 'assets/[name]-[hash].js'
+  if (has(chunk, /\/node_modules\/zod\//)) return 'assets/spec-shared-[hash].js'
+  if (has(chunk, /\/src\/studio\//)) return 'assets/studio-[name]-[hash].js'
+  if (has(chunk, /\/src\/(catalog|errors|spec)\//)) return 'assets/spec-[name]-[hash].js'
+  return 'assets/[name]-[hash].js'
+}
+
 // https://vite.dev/config/
 // The API port the dev proxy targets: the same env merge (loadEnv.js) and port parsing (server/config.js) the server uses.
 const apiPort = () => resolveDevProxyPort(mergeEnvFiles(fileURLToPath(new URL('.', import.meta.url))))
@@ -28,7 +46,7 @@ const root = fileURLToPath(new URL('.', import.meta.url))
 const appMode = resolveBuildAppMode(process.env, root)
 const appSpecJson = appMode === 'runtime' ? readBakedSpecJson(root) : null
 
-// `vite build` also swaps three unused modules for stubs (scripts/lib/webStubs/index.js); dev, Vitest and the sidecar bundles keep the real ones.
+// `vite build` also swaps two unused modules for stubs (scripts/lib/webStubs/index.js); dev, Vitest and the sidecar bundles keep the real ones.
 export default defineConfig(({ command }) => ({
   plugins: [
     react(),
@@ -38,12 +56,13 @@ export default defineConfig(({ command }) => ({
     ...(command === 'build' ? [webStubsPlugin()] : []),
   ],
   define: { __APP_MODE__: JSON.stringify(appMode) },
-  // "@/" maps to src/ (the app and Studio code use it; the vendored ui-builder in src/vendor/ is not built any more). The runtime package
+  // "@/" maps to src/ (the app and Studio code use it). The runtime package
   // (@local-app-studio/runtime, packages/runtime) resolves through the same list (scripts/lib/runtimeAlias.js).
   resolve: { alias: RUNTIME_ALIASES },
   build: {
     rolldownOptions: {
       output: {
+        chunkFileNames: chunkFileName,
         codeSplitting: {
           // Module ids use forward slashes on every OS.
           groups: [
@@ -56,7 +75,7 @@ export default defineConfig(({ command }) => ({
             // in the lazy chunks of the routes that import them.
             // The drag and drop library only the Design tab uses: its own lazy chunk, never initial and never in a built app.
             { name: 'editor-libs', test: /node_modules\/@dnd-kit\//, priority: 2 },
-            { name: 'shared', test: /\/src\/(?!(vendor|catalog|studio|runtime|spec|errors)\/)/, minShareCount: 2, priority: 1 },
+            { name: 'shared', test: /\/src\/(?!(catalog|studio|runtime|spec|errors)\/)/, minShareCount: 2, priority: 1 },
           ],
         },
       },

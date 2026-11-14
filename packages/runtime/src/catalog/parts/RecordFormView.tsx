@@ -1,13 +1,13 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import { btnPrimary, btnSecondary, formErrorClass, inputClass, labelClass } from '../../../../../src/components/shared/formStyles.js';
+import { btnPrimary, btnSecondary, formErrorClass, labelClass } from '../../../../../src/components/shared/formStyles.js';
 import type { Field } from '../../spec/schema.ts';
 import { useCatalogData, useMutations, useTableDef } from '../../../../../src/catalog/context.tsx';
 import type { DataRow } from '../../../../../src/catalog/context.tsx';
 import { ERROR_TEXT, errorText } from '../../../../../src/catalog/errorText.ts';
 import { isNumbered } from '../../spec/autoNumber.ts';
-import { isoToLocal, localToIso } from './format.ts';
-import { ReferenceSelect } from './ReferenceSelect.tsx';
+import { FieldInput } from './FieldInput.tsx';
+import { appliedText, toInput, toPayload } from './fieldValue.ts';
 
 type FormValues = Record<string, string | boolean>;
 
@@ -22,19 +22,6 @@ export interface RecordFormViewProps {
   hideSubmit?: boolean;
   onSaved?: (row: DataRow) => void;
   onCancel?: () => void;
-}
-
-/** The words of the rules a save ran ("Paid on was set to today."), from the row's non-enumerable `applied`. */
-function appliedText(row: DataRow): string {
-  const applied = (row as { applied?: unknown }).applied;
-  if (!Array.isArray(applied)) return '';
-  return applied.map((a) => (typeof a?.words === 'string' ? a.words : '')).filter(Boolean).join(' ');
-}
-
-function toInput(field: Field, value: unknown): string | boolean {
-  if (field.type === 'boolean') return value === true || value === 1;
-  if (value === null || value === undefined) return '';
-  return field.type === 'datetime' ? isoToLocal(String(value)) : String(value);
 }
 
 /** The page's own record (the :id of a record page): its table and id, for a new record's link to it. */
@@ -52,15 +39,6 @@ function initialValues(fields: Field[], record: DataRow | null | undefined, page
     out[f.id] = toInput(f, stored);
   }
   return out;
-}
-
-/** The value sent for a field, or undefined to leave it out (a new record's empty optional field). */
-function toPayload(field: Field, raw: string | boolean, editing: boolean): unknown {
-  if (field.type === 'boolean') return raw === true;
-  const text = typeof raw === 'string' ? raw : '';
-  if (text.trim() === '') return editing ? null : undefined;
-  if (field.type === 'integer' || field.type === 'real') return Number.isFinite(Number(text)) ? Number(text) : text;
-  return field.type === 'datetime' ? (localToIso(text) ?? text) : text;
 }
 
 const messageOf = (e: unknown): string => errorText(e, ERROR_TEXT.saveFailed);
@@ -164,57 +142,8 @@ export function RecordFormView({ table, record, fields, submitLabel, hideSubmit 
 
   const control = (f: Field) => {
     const id = `${uid}-${f.id}`;
-    const error = errors[f.id];
-    const aria = { id, 'aria-required': f.required || undefined, 'aria-invalid': error ? true : undefined, 'aria-describedby': error ? `${id}-error` : undefined };
     const raw = values[f.id];
-    const text = typeof raw === 'string' ? raw : '';
-    switch (f.type) {
-      case 'longtext':
-        return <textarea {...aria} rows={4} maxLength={20000} className={inputClass} value={text} onChange={(e) => set(f.id, e.target.value)} />;
-      case 'integer':
-        return <input {...aria} type="number" step={1} className={inputClass} value={text} onChange={(e) => set(f.id, e.target.value)} />;
-      case 'real':
-        return <input {...aria} type="number" step="any" className={inputClass} value={text} onChange={(e) => set(f.id, e.target.value)} />;
-      case 'date':
-        return <input {...aria} type="date" className={inputClass} value={text} onChange={(e) => set(f.id, e.target.value)} />;
-      case 'datetime':
-        return <input {...aria} type="datetime-local" className={inputClass} value={text} onChange={(e) => set(f.id, e.target.value)} />;
-      case 'select':
-        return (
-          <select {...aria} className={inputClass} value={text} onChange={(e) => set(f.id, e.target.value)}>
-            <option value="">{f.required ? 'Choose one' : 'None'}</option>
-            {f.options.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </select>
-        );
-      case 'reference':
-        return (
-          <ReferenceSelect
-            table={f.table}
-            value={text}
-            onChange={(v) => set(f.id, v)}
-            emptyLabel={f.required ? 'Choose one' : 'None'}
-            id={aria.id}
-            aria-describedby={aria['aria-describedby']}
-            aria-invalid={aria['aria-invalid']}
-          />
-        );
-      case 'boolean':
-        return (
-          <input
-            {...aria}
-            type="checkbox"
-            className="h-4 w-4 rounded-sm"
-            checked={raw === true}
-            onChange={(e) => set(f.id, e.target.checked)}
-          />
-        );
-      default:
-        return <input {...aria} type="text" maxLength={500} className={inputClass} value={text} onChange={(e) => set(f.id, e.target.value)} />;
-    }
+    return <FieldInput field={f} value={raw} onChange={(v) => set(f.id, v)} id={id} invalid={Boolean(errors[f.id])} describedBy={errors[f.id] ? `${id}-error` : undefined} />;
   };
 
   return (

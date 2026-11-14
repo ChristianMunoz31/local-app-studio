@@ -1,5 +1,5 @@
 // Audit through the real server.js with NOTHING in the AI path mocked except the network: a fake
-// Ollama behind node-fetch serves the model calls, the real audit sink writes to a real temp
+// Ollama behind the fetch seam serves the model calls, the real audit sink writes to a real temp
 // SQLite database. Each user request records exactly one llm row naming provider 'ollama', the
 // local model that served it and a redacted, capped context, plus call count metadata.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,9 +8,9 @@ vi.mock('../license/index.js', async (importOriginal) => (await import('./helper
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { installFakeOllama, textReply, toolReply } from './helpers/fakeOllama.js';
 import { __resetAiForTests } from '../ai/index.js';
 import { logAudit, resetAuditState } from '../audit.js';

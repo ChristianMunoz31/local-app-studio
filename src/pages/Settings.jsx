@@ -1,4 +1,4 @@
-import { Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import RouteBoundary from '../components/shared/RouteBoundary.jsx';
 import { useTheme } from '../contexts/ThemeContext';
 import { useToast } from '../contexts/ToastContext';
@@ -13,16 +13,20 @@ import { usePageContext } from '../contexts/PageContextContext';
 import { buildSettingsContext } from '../utils/assistantBuilders/settings';
 import AppearanceSection from '../components/settings/AppearanceSection';
 import GeneralSection from '../components/settings/GeneralSection';
-import AiSection from '../components/settings/AiSection';
 import DataStorageSection from '../components/settings/DataStorageSection';
 import PrivacyActivitySection from '../components/settings/PrivacyActivitySection';
 import NetworkSection from '../components/settings/NetworkSection';
-import ApiKeysSection from '../components/settings/ApiKeysSection';
 import ResetControl from '../components/settings/ResetControl';
+import LazySection from '../components/settings/LazySection';
 import SettingsLayout from '../components/settings/SettingsLayout';
 import { SETTINGS_SECTIONS } from '../components/settings/settingsSections';
 import LicenseSection from '../components/settings/LicenseSection';
 import { MODULE_APP_BACKGROUND, MODULE_APP_THEME, MODULE_SETTINGS_SECTIONS, MODULE_SHELL } from '../modules';
+
+// The AI and Connected services sections (the Ollama setup, the model lists, the cloud seam, the saved keys) load when Settings opens, not with it.
+// One chunk for both (components/settings/aiSections.js): what they share must not land in the first paint chunk.
+const AiSection = lazy(() => import('../components/settings/aiSections').then((m) => ({ default: m.AiSection })));
+const ApiKeysSection = lazy(() => import('../components/settings/aiSections').then((m) => ({ default: m.ApiKeysSection })));
 
 // A module that owns the shell (a built app) lists the kit sections it shows; Studio shows them all.
 const shown = (id) => MODULE_SHELL === null || MODULE_SHELL.kitSettings.includes(id);
@@ -135,11 +139,19 @@ export default function Settings() {
             onReset={done('General', resetGeneral)}
           />
         )}
-        {shown('ai') && <AiSection />}
+        {shown('ai') && (
+          <LazySection id="ai">
+            <AiSection />
+          </LazySection>
+        )}
         {shown('data-storage') && <DataStorageSection />}
         {shown('privacy') && <PrivacyActivitySection />}
         {shown('network') && <NetworkSection />}
-        {shown('api-keys') && <ApiKeysSection />}
+        {shown('api-keys') && (
+          <LazySection id="api-keys">
+            <ApiKeysSection />
+          </LazySection>
+        )}
         {shown('license') && <LicenseSection />}
         {MODULE_SETTINGS_SECTIONS.map(({ id, Component }) => (
           <RouteBoundary key={id} variant="section">

@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const h = vi.hoisted(() => ({ store: new Map() }));
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn(async () => { throw new Error('real fetch must not be used'); }) }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn(async () => { throw new Error('real fetch must not be used'); }) }));
 vi.mock('../../scripts/release/releaseConfig.js', async (importOriginal) => ({
   ...(await importOriginal()),
   RELEASE_CONFIG: Object.freeze({ sourceRepo: 'your-github-user/your-app', releasesRepo: 'your-github-user/your-app-releases' }),

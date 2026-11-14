@@ -1,8 +1,45 @@
 # Changelog
 
-## Unreleased
+## 1.2.0 (2026-11-13)
 
-Everything below is on `main` and not yet in a numbered release. Entries marked "pro build" describe parts that are not in the public build (see README, "What the public build does not include").
+The first release with Windows installers built from the public source. Apps get auto numbers, rules on a status change, CSV import, search, inline editing and a Kanban board; backups can also go to a second folder; the Assistant is harder to talk into a save you did not ask for; and the app is smaller and faster. Entries marked "pro build" describe parts that are not in the public build (see README, "What the public build does not include").
+
+### Records and automations
+
+* **runtime:** an optional auto number on one text or integer field per table. The number is set when a record is added and stays above the highest stored number through export, import, duplicate and restore. The Invoices example numbers from INV-1001
+* **runtime:** optional rules on a status change set or clear a field in the same save, for example "Paid on was set to today". Rules never chain and never use a model. The Data step has an Automations section
+* **runtime:** CSV import into a table, with a dry run first, up to 16 MB and 200000 rows (2 MB and 5000 rows in Preview). Cells that look like formulas are kept as text
+* **studio:** Export and Duplicate can include the records
+
+### Search, inline editing and Kanban
+
+* **runtime:** a Global search part that finds records across tables, using SQLite full text search with a plain fallback
+* **runtime:** a Table part can let you edit a cell in place, with the same checks and rules as the form (off unless you turn it on)
+* **runtime:** a Kanban part: drag a card, or use its Move button or the arrow keys, to change a choice field
+* **runtime:** the Table and List parts share one pager
+* **studio:** a design that uses a part this version does not know is refused with a sentence that names the part, instead of opening wrong
+
+### Backups and data
+
+* **backups:** the daily backups can also be copied to a second folder, so a copy can leave the PC. A failed copy never touches the local backup
+* **data:** download one table as a plain CSV file, and the Data page links to your backups
+* **docs:** the docs say plainly that the app is for one PC and one user at a time
+
+### Assistant safety
+
+* **assistant:** the save card says when a change matches text inside a record or was not asked for, the Assistant no longer urges you to approve, and a fixed note follows a reply that urges a change you did not ask for
+* **assistant:** a link a model writes in a reply is shown as plain text with its host
+
+### Speed and size
+
+* **studio:** a save that changes only the look, layout, menu or navigation updates Preview without restarting it
+* **runtime:** database indexes are made from the fields pages sort, filter and group on, prepared statements are reused, and the database is tidied when it closes
+* **runtime:** a list can show an optional total, and a small, safe markdown renderer replaces a larger library
+* **build:** the vendored ui-builder and 34 packages were removed
+
+### Open source
+
+* **license:** the source is published under AGPL-3.0, with the pro parts kept out of the public build
 
 ### Cards, Show as and Enlarge
 
