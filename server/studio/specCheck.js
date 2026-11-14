@@ -1,10 +1,13 @@
 // The one definition of a valid stored or submitted AppSpec, plus the pure helpers that name and seed an app.
-import { APP_NAME_RE, RESERVED_APP_NAMES, isWindowsDeviceName, validateAppSpec } from '../spec/index.js';
+import { APP_NAME_RE, LIMITS, RESERVED_APP_NAMES, isWindowsDeviceName, validateAppSpec } from '../spec/index.js';
 import { CATALOG_CHECKS } from '../../src/catalog/validateLayout.ts';
 import { expandSpecFeatures, hasFeatureNodes } from '../../src/catalog/features/index.ts';
+import { specCompatProblem, withFeatures } from '@local-app-studio/runtime/runtime/specCompat.js';
 
 export const SPEC_SHAPE = Object.freeze({ maxDepth: 80, maxNodes: 150000 });
 export const MAX_APPS = 200;
+/** The issue code (and the error code) of a design that uses something newer than this version. */
+export const SPEC_TOO_NEW = 'spec_too_new';
 const NAME_MAX = 40;
 
 /**
@@ -28,7 +31,9 @@ export function jsonShapeProblem(value, { maxDepth, maxNodes } = SPEC_SHAPE) {
 }
 
 /**
- * Shape check, then validateAppSpec with the catalog layout and menu hooks. Never throws.
+ * Shape check, then (unless the design is over the size limit) the compatibility check (a design that uses something newer than this version is refused with the one
+ * `spec_too_new` issue, ADR-015), then validateAppSpec with the catalog layout and menu hooks. A valid spec comes back with its
+ * `features` list set to what it uses (absent when it uses none). Never throws.
  * @param {unknown} input
  * @returns {{ ok: true, spec: object, issues: [] } | { ok: false, spec: null, issues: Array<{ path: string, code: string, message: string }> }}
  */
@@ -36,8 +41,13 @@ export function checkSpec(input) {
   try {
     const problem = jsonShapeProblem(input);
     if (problem) return { ok: false, spec: null, issues: [{ path: '(root)', code: 'too_complex', message: problem }] };
+    // The size limit outranks the compatibility check: an oversized design gets the plain size refusal from
+    // validateAppSpec, never "update to open it" (A5.2 in limits.test.js).
+    const oversized = (JSON.stringify(input)?.length ?? 0) > LIMITS.specChars;
+    const newer = oversized ? null : specCompatProblem(input);
+    if (newer) return { ok: false, spec: null, issues: [{ path: '(root)', code: SPEC_TOO_NEW, message: newer.sentence }] };
     const result = validateAppSpec(input, { ...CATALOG_CHECKS });
-    return result.ok ? { ok: true, spec: result.value, issues: [] } : { ok: false, spec: null, issues: result.issues };
+    return result.ok ? { ok: true, spec: withFeatures(result.value), issues: [] } : { ok: false, spec: null, issues: result.issues };
   } catch {
     return { ok: false, spec: null, issues: [{ path: '(root)', code: 'invalid', message: 'This app could not be checked.' }] };
   }

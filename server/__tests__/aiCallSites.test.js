@@ -5,9 +5,9 @@ import { PUBLIC_BUILD } from './helpers/proBuild.js';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { Readable } from 'node:stream';
 import { hangingChat, installFakeOllama, textReply } from './helpers/fakeOllama.js';
 import { __resetAiForTests, getAiClient } from '../ai/index.js';

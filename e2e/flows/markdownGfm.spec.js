@@ -1,6 +1,6 @@
-// The built UI renders GFM markdown: the web build stubs the to-markdown half of mdast-util-gfm and two zod
-// JSON-schema modules (scripts/lib/webStubs/), and vitest uses the real modules, so only this spec against dist/
-// proves rendering is unchanged. Surface: the Assistant's page advice, fed fixed text by the fake Ollama's chat hook.
+// The built UI renders GFM markdown with the in-repo renderer (src/components/shared/markdownParse.js and
+// MarkdownImpl.jsx), so this spec against dist/ proves the built chunk renders it.
+// Surface: the Assistant's page advice, fed fixed text by the fake Ollama's chat hook.
 import { test, expect, useApp } from '../support/fixtures.js';
 import { assistant } from '../pages/assistant.js';
 

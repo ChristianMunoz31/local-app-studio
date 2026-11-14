@@ -1,5 +1,5 @@
-// A fake OpenAI-compatible cloud provider for tests, behind a mocked node-fetch
-// (vi.mock('node-fetch')). Nothing real is ever contacted: the host is api.example.com and the
+// A fake OpenAI-compatible cloud provider for tests, behind a mocked fetch seam
+// (vi.mock('../../net/fetch.js')). Nothing real is ever contacted: the host is api.example.com and the
 // key is an obviously fake string. Records every request body so tests can assert exactly what
 // would have left the machine.
 import { Readable } from 'node:stream';
@@ -72,7 +72,7 @@ const sse = (text) =>
 const json = (body) => ({ ok: true, status: 200, json: async () => body, text: async () => JSON.stringify(body), headers: { get: () => null } });
 
 /**
- * Install the fake on a mocked node-fetch.
+ * Install the fake on a mocked fetch seam.
  * Each reply is a string (a text answer) or `{ toolCalls: [{ name, arguments }] }`. The last reply
  * repeats once the queue is down to one entry.
  * @param {import('vitest').Mock} fetchMock
@@ -119,7 +119,7 @@ export function installFakeCloud(fetchMock, { replies = ['Cloud reply.'] } = {})
 }
 
 /**
- * Both providers behind one mocked node-fetch: api.example.com is the fake cloud, everything
+ * Both providers behind one mocked fetch seam: api.example.com is the fake cloud, everything
  * else is the fake Ollama (so a fall-back to local still has something to talk to).
  * @param {import('vitest').Mock} fetchMock
  * @param {{ replies?: Array<string | object>, ollama?: object }} [opts] `ollama` is passed to installFakeOllama.

@@ -6,7 +6,7 @@
 // No env values or credentials are ever written.
 import { createRequire } from 'node:module';
 import { zipSync, strToU8 } from 'fflate';
-import { op, select } from '../db/query.js';
+import { count as countRows, op, select } from '../db/query.js';
 import { BUNDLED_APP_VERSION } from '../runtime.js';
 import { DATA_TABLES } from '../dataTables.js';
 import { WAITING_KEY_PREFIX } from '../waitingKey.js';
@@ -54,42 +54,77 @@ class ExportTooLargeError extends Error {
   }
 }
 
-const cutOff = (rows) => ({ rows, status: 'skipped_deadline', truncated: true });
-
 /**
- * Reads one table in keyset pages on its single text-like primary key (plain binary order).
- * Stops only on an empty page, the row cap, or the deadline. Every page is charged to the
- * shared raw-bytes budget; going over it throws ExportTooLargeError, the only throw.
- * @returns {Promise<{ rows: object[], status: string, truncated: boolean, code?: string }>}
+ * Reads one table in keyset pages on its single text-like primary key (plain binary order), yielding
+ * each page. Stops only on an empty page, the row cap, or the deadline. How it ended is written to
+ * `outcome` ({ status, truncated, code? }) when the generator finishes; a consumer that stops early
+ * gets no outcome. Shared by the ZIP build and the CSV download route.
+ * @param {import('node:sqlite').DatabaseSync} db
+ * @param {object} def a DATA_TABLES entry
+ * @param {{ deadline: number, maxRows: number, signal: AbortSignal }} opts
+ * @param {{ status?: string, truncated?: boolean, code?: string }} outcome filled in at the end
+ * @returns {AsyncGenerator<object[], void, undefined>}
  */
-async function collectTable(db, def, { deadline, maxRows, signal, budget }) {
+export async function* readTablePages(db, def, { deadline, maxRows, signal }, outcome) {
   const columns = def.columns.map((c) => c.name);
-  const rows = [];
   let lastPk;
+  let seen = 0;
   let ended = false;
-  while (rows.length < maxRows) {
-    if (deadline - Date.now() <= 0 || signal.aborted) return cutOff(rows);
-    const size = Math.min(EXPORT_PAGE_SIZE, maxRows - rows.length);
+  while (seen < maxRows) {
+    if (deadline - Date.now() <= 0 || signal.aborted) {
+      Object.assign(outcome, { status: 'skipped_deadline', truncated: true });
+      return;
+    }
+    const size = Math.min(EXPORT_PAGE_SIZE, maxRows - seen);
     let chunk;
     try {
       const where = lastPk === undefined ? undefined : { [def.primaryKey]: op.gt(lastPk) };
       chunk = select(def.id, { columns, where, orderBy: [{ column: def.primaryKey, dir: 'asc' }], limit: size, db });
     } catch (e) {
-      return { rows: [], status: 'error', truncated: false, code: e?.code };
+      Object.assign(outcome, { status: 'error', truncated: false, code: e?.code });
+      return;
     }
     if (chunk.length === 0) {
       ended = true;
       break;
     }
-    rows.push(...chunk);
-    budget.used += JSON.stringify(chunk).length;
-    if (budget.used > budget.max) throw new ExportTooLargeError();
+    seen += chunk.length;
     lastPk = chunk[chunk.length - 1][def.primaryKey];
+    yield chunk;
     // Let close/abort events fire between pages.
     await yieldToLoop();
   }
   // Cap reached without seeing an empty page: more rows may exist.
-  return { rows, status: 'ok', truncated: !ended && rows.length >= maxRows };
+  Object.assign(outcome, { status: 'ok', truncated: !ended && seen >= maxRows });
+}
+
+/** True when the table holds more rows than the cap, so a capped export is known to cut it off. */
+export function exceedsRowCap(db, def, maxRows) {
+  return countRows(def.id, { db }) > maxRows;
+}
+
+/** Rows as exported: app_state loses its hidden and waiting keys and is scrubbed; other tables pass through. */
+export function exportableRows(def, rows) {
+  if (def.redact !== 'app_state') return rows;
+  return rows
+    .filter((r) => !EXPORT_SKIP_APP_STATE_KEYS.has(r?.key) && !(typeof r?.key === 'string' && r.key.startsWith(WAITING_KEY_PREFIX)))
+    .map(redactAppStateRow);
+}
+
+/**
+ * Reads one table fully. Every page is charged to the shared raw-bytes budget; going over it
+ * throws ExportTooLargeError, the only throw.
+ * @returns {Promise<{ rows: object[], status: string, truncated: boolean, code?: string }>}
+ */
+async function collectTable(db, def, { deadline, maxRows, signal, budget }) {
+  const rows = [];
+  const outcome = {};
+  for await (const chunk of readTablePages(db, def, { deadline, maxRows, signal }, outcome)) {
+    rows.push(...chunk);
+    budget.used += JSON.stringify(chunk).length;
+    if (budget.used > budget.max) throw new ExportTooLargeError();
+  }
+  return outcome.status === 'error' ? { rows: [], ...outcome } : { rows, ...outcome };
 }
 
 /**
@@ -141,10 +176,7 @@ export async function buildExportZip({
     if (halted) return null;
     if (collected.status === 'error') console.error('Export table error:', def.id, collected.code ?? 'unknown');
     // `studio.waiting.*` rows are not exported either (an unsaved design belongs to no app after an import; see the import).
-    const rows =
-      def.redact === 'app_state'
-        ? collected.rows.filter((r) => !EXPORT_SKIP_APP_STATE_KEYS.has(r?.key) && !(typeof r?.key === 'string' && r.key.startsWith(WAITING_KEY_PREFIX))).map(redactAppStateRow)
-        : collected.rows;
+    const rows = exportableRows(def, collected.rows);
     const json = strToU8(JSON.stringify(rows));
     const csv = strToU8(toCsv(def.columns, rows));
     // JSON size was charged per page; add the CSV copy.

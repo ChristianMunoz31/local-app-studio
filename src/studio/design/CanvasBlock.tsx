@@ -8,7 +8,7 @@
 // are drawn in the chrome layer beside the theme scope (ChromeLayer.tsx), so Studio's controls keep the kit theme.
 import { useDraggable } from '@dnd-kit/core';
 import { ArrowDown, ArrowUp, ChevronsLeftRight, ChevronsRightLeft, Columns2, CornerDownRight, GripVertical, Plus, Settings, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import type { KeyboardEvent, ReactNode } from 'react';
 import { FOCUS_RING, POPOVER_CLASS } from '../components/ui';
 import type { LayoutLayer } from '@local-app-studio/runtime/spec/schema';
@@ -45,6 +45,15 @@ interface Props {
   /** The part content is a picture: nothing inside it can be clicked or typed in. */
   inert: boolean;
   children: ReactNode;
+}
+
+/** What the block takes from its draggable (CanvasBlock below): the callbacks are stable, so they never change what the body shows. */
+interface DragProps {
+  setNodeRef(el: HTMLElement | null): void;
+  setActivatorNodeRef(el: HTMLElement | null): void;
+  listeners: ReturnType<typeof useDraggable>['listeners'];
+  isDragging: boolean;
+  movable: boolean;
 }
 
 const TOOL_BASE =
@@ -118,7 +127,24 @@ function MovePlaces({ id, name, places, onClose }: PlacesProps) {
   );
 }
 
-export default function CanvasBlock({ layer, parent, index, zones, inert, children }: Props) {
+/**
+ * A block is a draggable, and dnd-kit re-renders every draggable each time the place under the pointer changes. So the hook sits
+ * in this thin component and the body is a memo: a drag moving over the page re-renders these shells, not the blocks.
+ */
+export default function CanvasBlock(props: Props) {
+  const { tree } = useDesign();
+  const { layer, parent } = props;
+  const movable = parent !== null && layer.type !== 'Tab' && layer.type !== 'Column';
+  // The menu bar has its own draggable ids and says which tree a block comes from, so a drop knows where to take it.
+  const { setNodeRef, setActivatorNodeRef, listeners, isDragging } = useDraggable({
+    id: `${tree === 'menu' ? 'menu-block' : 'block'}:${layer.id}`,
+    data: { kind: 'block', id: layer.id, tree },
+    disabled: !movable,
+  });
+  return <BlockBody {...props} setNodeRef={setNodeRef} setActivatorNodeRef={setActivatorNodeRef} listeners={listeners} isDragging={isDragging} movable={movable} />;
+}
+
+const BlockBody = memo(function BlockBody({ layer, parent, index, zones, inert, children, setNodeRef, setActivatorNodeRef, listeners, isDragging, movable }: Props & DragProps) {
   const { root, spec, page, ctx, library, builder, drag, selectedId, select, settingsId, openSettings, remove, move, apply, focusBlock, tell, tree, menuPosition, otherPlaces, moveAcross, beside, askTable } = useDesign();
   const selected = selectedId === layer.id;
   const isRoot = parent === null;
@@ -129,15 +155,8 @@ export default function CanvasBlock({ layer, parent, index, zones, inert, childr
   const place = placed ? placeOf(root, layer.id) : null;
   const gridKey = useGridKeys(layer, parent);
   const placeDescId = useId();
-  const movable = !isRoot && layer.type !== 'Tab' && layer.type !== 'Column';
   // The parts of a Row sit side by side, and so do those of the menu bar across the top: their drop zones are thin vertical bars.
   const orientation = parent?.type === 'Row' || (parent?.type === 'MenuSlot' && menuPosition === 'top') ? 'inline' : 'block';
-  // The menu bar has its own draggable ids and says which tree a block comes from, so a drop knows where to take it.
-  const { setNodeRef, setActivatorNodeRef, listeners, isDragging } = useDraggable({
-    id: `${tree === 'menu' ? 'menu-block' : 'block'}:${layer.id}`,
-    data: { kind: 'block', id: layer.id, tree },
-    disabled: !movable,
-  });
   const blockRef = useRef<HTMLDivElement | null>(null);
   // Stable on purpose: a new callback ref every render is detached and attached again, and the settings popover (a child) would
   // measure the block in between, when its ref is empty.
@@ -509,4 +528,4 @@ export default function CanvasBlock({ layer, parent, index, zones, inert, childr
       {parent !== null && placed && showTools && drag === null && <GridResizeHandle layer={layer} parent={parent} name={name} />}
     </div>
   );
-}
+});

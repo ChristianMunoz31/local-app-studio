@@ -5,7 +5,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({
+vi.mock('../net/fetch.js', () => ({
   default: vi.fn(async () => ({ ok: true, status: 200, json: async () => [] })),
 }));
 

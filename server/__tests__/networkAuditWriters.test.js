@@ -1,5 +1,5 @@
 // Every outbound path that had no audit row now writes one names-only row (feature id, host, result).
-// All requests go through fakes: node-fetch is mocked and injected fetchImpls answer; no network.
+// All requests go through fakes: the fetch seam is mocked and injected fetchImpls answer; no network.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { closeTestDb, createTestDb, resetDb, rowsOf } from './helpers/testDb.js';
 import { installFakeOllama } from './helpers/fakeOllama.js';
@@ -12,9 +12,9 @@ vi.mock('../../scripts/release/releaseConfig.js', async (importOriginal) => ({
   RELEASE_CONFIG: Object.freeze({ sourceRepo: 'acme/notes', releasesRepo: 'acme/notes-releases' }),
 }));
 
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { __resetNetPolicyForTests } from '../netPolicy.js';
 import { checkForUpdate, __resetUpdateCacheForTests } from '../updateCheck.js';
 import { NETWORK_COALESCE_MS, __resetNetworkCoalesceForTests, recordNetworkCall, statusFromHttp } from '../networkCall.js';

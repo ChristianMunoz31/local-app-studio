@@ -10,7 +10,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PUBLIC_BUILD } from './helpers/proBuild.js';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
 // Real secrets module, except getSecret can be told to fail (real failure injection at the seam
 // the registry reads the cloud key through).
@@ -23,7 +23,7 @@ vi.mock('../secrets/index.js', async (importOriginal) => {
   };
 });
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import * as consentModule from '../ai/consent.js';
 import { clearCloudConsent } from '../ai/consent.js';
 import { __resetAiForTests, getAiClient } from '../ai/index.js';

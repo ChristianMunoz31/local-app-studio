@@ -8,7 +8,7 @@ process.env.APP_TEST_DATA_DIR = dir;
 process.env.APP_DATA_DIR = dir; // belt and braces for code that calls getDataDir() directly
 
 // Local AI settings from the developer's own shell (an Ollama install often sets OLLAMA_HOST)
-// must not leak into tests: every AI test mocks node-fetch and expects the defaults.
+// must not leak into tests: every AI test mocks the fetch seam and expects the defaults.
 for (const name of [
   'APP_AI',
   'OLLAMA_HOST',

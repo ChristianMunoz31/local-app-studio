@@ -44,12 +44,15 @@ function validMeta(meta, id) {
 }
 
 /**
+ * A meta carrying `copiedFrom` is a second-location copy made by some install, never a backup of the
+ * folder it sits in. Local callers get null for it; only destination retention opts in.
  * @param {string} id
  * @param {string} [dir]
  * @param {import('./fsops.js').FsOps} [fsOps]
+ * @param {{ includeCopied?: boolean }} [opts]
  * @returns {Promise<object | null>} null when missing or unusable
  */
-export async function readMeta(id, dir = backupsDir(), fsOps = createFsOps()) {
+export async function readMeta(id, dir = backupsDir(), fsOps = createFsOps(), { includeCopied = false } = {}) {
   if (!ID_RE.test(id)) return null;
   try {
     const st = await fsOps.lstat(metaPath(id, dir));
@@ -58,7 +61,9 @@ export async function readMeta(id, dir = backupsDir(), fsOps = createFsOps()) {
     return null;
   }
   const meta = await readJsonOrNull(metaPath(id, dir), fsOps);
-  return validMeta(meta, id) ? meta : null;
+  if (!validMeta(meta, id)) return null;
+  if (!includeCopied && meta.copiedFrom !== undefined) return null;
+  return meta;
 }
 
 /**
@@ -71,12 +76,15 @@ export async function writeMeta(meta, dir = backupsDir(), fsOps = createFsOps())
 }
 
 /**
- * All usable metas, newest first. Unparsable files and files with a bad id are ignored.
+ * All usable metas, newest first. Unparsable files and files with a bad id are ignored. Metas that carry
+ * `copiedFrom` (copies kept for an install) are left out unless `includeCopied` is set, so a folder
+ * shared with another install never shows foreign copies as local backups.
  * @param {string} [dir]
  * @param {import('./fsops.js').FsOps} [fsOps]
+ * @param {{ includeCopied?: boolean }} [opts]
  * @returns {Promise<object[]>}
  */
-export async function listMetas(dir = backupsDir(), fsOps = createFsOps()) {
+export async function listMetas(dir = backupsDir(), fsOps = createFsOps(), { includeCopied = false } = {}) {
   let names;
   try {
     names = await fsOps.readdir(dir);
@@ -88,7 +96,7 @@ export async function listMetas(dir = backupsDir(), fsOps = createFsOps()) {
   for (const name of names) {
     const m = META_RE.exec(name);
     if (!m || !ID_RE.test(m[1])) continue;
-    const meta = await readMeta(m[1], dir, fsOps);
+    const meta = await readMeta(m[1], dir, fsOps, { includeCopied });
     if (meta) out.push(meta);
   }
   return out.sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || (a.id < b.id ? 1 : -1));

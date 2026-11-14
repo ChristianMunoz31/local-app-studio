@@ -1,5 +1,5 @@
 // Audit instrumentation through the real server.js: every LLM route, login, and
-// GET /api/audit. Local AI runs on a fake Ollama behind a mocked node-fetch (the
+// GET /api/audit. Local AI runs on a fake Ollama behind a mocked fetch seam (the
 // Assistant and advisor internals are mocked); the audit sink is either a spy (to
 // assert the event) or the real logAudit over a real SQLite database (to assert the stored row).
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,11 +9,11 @@ import http from 'node:http';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 vi.mock('../agents/assistantAgent.js', async (orig) => ({ ...(await orig()), runAssistant: vi.fn(), runBriefing: vi.fn() }));
 vi.mock('../assistant/advisorService.js', () => ({ generateAdvice: vi.fn(), streamAdvice: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { installFakeOllama } from './helpers/fakeOllama.js';
 import { __resetAiForTests } from '../ai/index.js';
 import { runAssistant } from '../agents/assistantAgent.js';

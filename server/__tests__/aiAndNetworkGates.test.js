@@ -8,9 +8,9 @@ vi.mock('../license/index.js', async (importOriginal) => (await import('./helper
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) })) }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn(async () => ({ ok: true, status: 200, json: async () => ({}) })) }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 
 const AI_BODY = { code: 'ai_not_configured', reason: 'ai_disabled', error: 'AI is turned off.', message: 'AI is turned off.' };
 const KEYS = [

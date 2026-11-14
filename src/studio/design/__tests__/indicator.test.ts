@@ -53,6 +53,19 @@ describe('partIndicator, built-in parts', () => {
     expect(got).toMatchObject({ state: 'needs_field', text: 'Needs a yes or no field', tables: ['people'], target: 'props.source' });
     if (got?.state === 'needs_field') expect(needsFieldText(got.needs)).toBe('Needs a yes or no field');
   });
+  it('a Kanban is connected to its table, and needs a choice field where no table has one', () => {
+    expect(indicate(spec, 'home', layer('k', 'Kanban', { source: 'all_crews', field: 'status' }))).toMatchObject({ state: 'connected', table: 'crews', target: 'props.source' });
+    const noSelect = specOf((i) => {
+      i.tables = i.tables?.map((t) => ({ ...t, fields: t.fields.filter((f) => f.type !== 'select') }));
+    });
+    const got = indicate(noSelect, 'blank', layer('k', 'Kanban', { source: NOT_CONNECTED }));
+    expect(got).toMatchObject({ state: 'needs_field', text: 'Needs a choice field', target: 'props.source' });
+    expect(indicate(peopleOnly(), 'blank', layer('k', 'Kanban', { source: NOT_CONNECTED }))).toMatchObject({ state: 'needs_field', text: 'Needs a choice field', tables: ['people'] });
+    expect(indicate(noTables(), 'blank', layer('k', 'Kanban', { source: NOT_CONNECTED }))).toMatchObject({ state: 'needs_table', offer: { kind: 'no_table' } });
+  });
+  it('a Global search has no indicator, on a page or in the menu', () => {
+    expect(indicate(spec, 'home', layer('g', 'GlobalSearch', {}))).toBeNull();
+  });
   it('names every kind a part needs', () => {
     expect(needsFieldText([{ prop: 'a', types: ['date'] }, { prop: 'b', types: ['select'] }])).toBe('Needs a date field and a choice field');
   });

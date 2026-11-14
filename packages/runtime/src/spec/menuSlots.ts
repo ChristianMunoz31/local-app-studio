@@ -5,14 +5,14 @@ export const MENU_SLOTS = ['start', 'end'] as const;
 export type MenuSlotName = (typeof MENU_SLOTS)[number];
 
 /** The parts a menu slot may hold. No data views, forms or features. */
-export const MENU_PARTS: readonly string[] = ['Button', 'Link', 'SearchBox', 'QuickAdd', 'Text', 'Row'];
+export const MENU_PARTS: readonly string[] = ['Button', 'Link', 'SearchBox', 'GlobalSearch', 'QuickAdd', 'Text', 'Row'];
 /** The parts a Row inside a menu slot may hold (no Row in a Row). */
-export const MENU_ROW_PARTS: readonly string[] = ['Button', 'Link', 'SearchBox', 'QuickAdd', 'Text'];
+export const MENU_ROW_PARTS: readonly string[] = ['Button', 'Link', 'SearchBox', 'GlobalSearch', 'QuickAdd', 'Text'];
 /** A slot holds at most `perSlot` top layers, the whole menu at most `layers` layers (Rows and their children included). */
 export const MENU_LIMITS = Object.freeze({ perSlot: 6, layers: 24 });
 
-const TOP_PROBLEM = 'The menu bar can only hold: Button, Link, SearchBox, QuickAdd, Text and Row.';
-const ROW_PROBLEM = 'A row in the menu bar can only hold: Button, Link, SearchBox, QuickAdd and Text.';
+const TOP_PROBLEM = 'The menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd, Text and Row.';
+const ROW_PROBLEM = 'A row in the menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd and Text.';
 
 /** The layers of one slot, read without trusting the block: own key, an array, else []. */
 export function slotLayers(menu: unknown, slot: MenuSlotName): readonly unknown[] {

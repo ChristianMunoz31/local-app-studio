@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { buildQuery, createHttpDataSource, exportTables, fetchDataInfo } from '../dataClient.js';
+import { buildQuery, createHttpDataSource, downloadTableCsv, exportTables, fetchDataInfo } from '../dataClient.js';
 
 const reply = (body, status = 200, headers = {}) => new Response(JSON.stringify(body), { status, headers });
 
@@ -115,5 +115,32 @@ describe('fetchDataInfo and exportTables', () => {
       code: 'export_too_large',
       message: 'This table is too large to export in one file. Remove rows you no longer need, then try again.',
     });
+  });
+
+  it('downloadTableCsv posts one id with format csv and saves the named file', async () => {
+    const headers = { 'Content-Disposition': 'attachment; filename="local-app-studio-crews-1.csv"', 'X-Export-Complete': '0' };
+    const fetchMock = vi.fn(async () => new Response('id', { status: 200, headers }));
+    vi.stubGlobal('fetch', fetchMock);
+    URL.createObjectURL = vi.fn(() => 'blob:x');
+    URL.revokeObjectURL = vi.fn();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    await expect(downloadTableCsv('crews', '/other')).resolves.toEqual({ filename: 'local-app-studio-crews-1.csv', complete: false });
+    expect(fetchMock.mock.calls[0][0]).toBe('/other/export');
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ tables: ['crews'], format: 'csv' });
+    expect(click).toHaveBeenCalled();
+    click.mockRestore();
+  });
+
+  it('downloadTableCsv falls back to a .csv name and maps errors like the ZIP export', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('x', { status: 200 })));
+    URL.createObjectURL = vi.fn(() => 'blob:x');
+    URL.revokeObjectURL = vi.fn();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+    await expect(downloadTableCsv('crews')).resolves.toMatchObject({ filename: 'export-crews.csv' });
+    click.mockRestore();
+    vi.stubGlobal('fetch', vi.fn(async () => reply({ error: 'x', code: 'export_too_large' }, 413)));
+    await expect(downloadTableCsv('crews')).rejects.toMatchObject({ code: 'export_too_large' });
+    vi.stubGlobal('fetch', vi.fn(async () => Promise.reject(new TypeError('failed'))));
+    await expect(downloadTableCsv('crews')).rejects.toMatchObject({ code: 'network_unreachable' });
   });
 });

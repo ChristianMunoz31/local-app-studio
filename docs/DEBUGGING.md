@@ -148,6 +148,36 @@ Exit code 5 means "stopped after an unexpected error left it in an unsafe state"
 
 The Tauri shell does not restart the sidecar. On any unexpected exit it navigates the window to its bundled error page and shows a dialog ("Local App Studio stopped unexpectedly") with Open log folder, Copy details (the last 40 stderr lines) and Quit, or the restore recovery dialog for exit 3. There is no restart path in `src-tauri/src`. With the guards, a recoverable error no longer reaches the shell; an unsafe one ends in that dialog, with the `process.exit_unsafe` line at the end of the stderr tail.
 
+## Preview restarted, or did not
+
+A save restarts the Preview child unless nothing the child reads changed; then the running child is kept (the hot swap, ADR-019, [ARCHITECTURE.md](ARCHITECTURE.md), "Preview start, restart and the hot swap"). To see which way a save went:
+
+- `GET /api/studio/preview/status`: after a swap `revision` moved and `startedAt` did not; after a restart both moved (`state` is `starting` until the new child is ready).
+- Studio's log has one `stage` line with `stage: "preview.swap"` per try (a try happens only while the preview runs this app with nothing in flight): `outcome: "swapped"`, or `outcome: "restart"` with `reason` `view_changed` (the save changed something the child reads), `view_unknown` (the child would refuse the spec, so the restart reports why) or `write_failed` (with `code`, the scratch `app-spec.json` could not be replaced; the restart writes it again). No line means the save went straight to a restart: the preview was starting, stopping, being reset, showed another app, or the revision was not newer.
+- A change that should restart but swapped is a defect of the view: the child would keep serving the old spec until its next start. Find what the child reads with `server/__tests__/studio/previewChildView.test.js` (it lists every module that imports the spec source and records what the data routes read) and keep the part out of `STUDIO_ONLY` in `server/studio/preview/swap.js`. Restart in Preview options always starts a new child.
+- The swap itself is about 1 ms (`durationMs` of the stage line; 0.76 to 3.48 ms measured in phase 34). A restart is about 0.9 s on a quiet machine with a source checkout child and about 0.4 s with the bundled child; a slow one is load, not a stage of the start (`docs/phase32/SPIKE-preview-hot-swap.md`).
+
+## The second backup copy failed, or did not run
+
+The copy to the second folder (ADR-020, `server/backup/secondCopy.js`) never changes the local backup: if it fails, the backup in `<data folder>/backups` is still good.
+
+- **Where its state is.** `<data folder>/backups/state.json`, key `secondCopy`: `originId` (this install's id, written into every copied meta as `copiedFrom`), `folderKey` (the folder the record is for; a different folder starts clean), `lastCopiedId`, `lastAttemptAt`, `lastResult` (`ok` or `failed`), `lastError`, `lastSuccessAt`, `lastFailureAt`. The same facts, with `health` (`off`, `ok`, `pending`, `failing`), come from `GET /api/backups/status` under `secondCopy`.
+- **What `lastError` means and what to check.**
+  - `copy_folder_missing`: the folder (or the drive or share) is not there now. Plug the drive in or reconnect the share, or save another folder.
+  - `copy_not_writable`: the folder refuses writes (permissions, read only media, a share that went read only). Check that you can create a file in it.
+  - `copy_disk_full`: the destination has no room. Free space; the copy retries within the hour.
+  - `copy_locked`: a file there stayed busy after a few tries (a sync client or scanner holding it). It usually clears by itself.
+  - `copy_verify_failed`: the copied file did not match the sha256 in the backup's meta. The temp file was deleted and nothing was renamed. Suspect the destination drive or share; the local backup is not changed.
+  - `copy_timeout`: one job passed 10 minutes (a slow share). Nothing is kept under a final name.
+  - `copy_stuck`: an earlier job passed its 10 minutes but its disk call never came back, so later ticks are refused (one outstanding call at most) and each records this code with a fresh `lastFailureAt`. It does not retry by itself: restart the app. The status sentence says so.
+  - `copy_folder_inside_data`: the folder now resolves to a place inside the data folder (a link or junction changed, or the same folder under another path such as `\\localhost\C$`). The copy did nothing. Save a folder outside the data folder.
+  - `copy_app_folder`: the folder holds another app's data: this app's `state.json` (an object with `formatVersion` 1 and `lastRunAt`, `confirmedId` or `secondCopy`), a real SQLite `app.db` (first 16 bytes `SQLite format 3`), or a backup meta that is not a copy. An unrelated `state.json` or `app.db` does not count. The copy did nothing. Save another folder.
+  - Saving a folder that does not answer within 15 seconds is refused with reason `slow` (a hung drive or share); another save is refused the same way until the first check has settled.
+  - `copy_failed`: any other error (the code is all that is kept, never the system text). Look at the folder and the disk.
+- **Leftover `.copy-tmp` files.** A copy that is cut off leaves files named `.local-app-studio-<id>.<ext>.<8 hex>.copy-tmp` in the second folder. They are never read as a backup. The next copy removes only our own temp files older than an hour; delete one by hand if you want it gone sooner.
+- **A copy at exit.** Closing the app aborts a running copy (`abortSecondCopy` in `stop()`, before the backup worker drain) and records nothing, so `lastCopiedId` does not move. The first scheduler tick after the next start (60 seconds after launch) copies the newest backup again. A tick also retries a failed copy every hour, even when automatic backups are off.
+- **Nothing copied and no error.** `health: 'off'` means no folder is saved. `skipped` outcomes (no verified backup yet, the newest one already copied for this folder) record nothing.
+
 ## The gate's classifications and quarantine
 
 `npm run gate` and the `ci.yml` unit and e2e steps share the same scripts (`scripts/ci/gateClassify.js`, `gateState.js`). The rules (the rerun alone, flaky against real, the steps that are always real, the rerun caps, the quarantine and the protected gate) are in [PIPELINE.md](PIPELINE.md), "Classifying a failure" and "Quarantine". Two facts live here only:

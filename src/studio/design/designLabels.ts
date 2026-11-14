@@ -115,6 +115,7 @@ const PART_FIELD_LABELS: Readonly<Record<string, string>> = {
   'Chart:props.field': 'Number field',
   'ProgressBar:props.field': 'Number field',
   'Checklist:props.field': 'Done field',
+  'Kanban:props.field': 'Columns from',
   'QuickAdd:props.field': 'Field to fill in',
 };
 

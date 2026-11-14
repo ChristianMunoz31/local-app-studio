@@ -6,7 +6,7 @@
 //
 // Mechanism: net.Socket.prototype.connect is patched once per worker (node builtins are shared
 // across isolated test files, so the patch hides behind a Symbol.for key on globalThis). Every
-// http/https/tls/undici/node-fetch client ends in Socket#connect. globalThis.fetch is wrapped as
+// http/https/tls/undici client ends in Socket#connect. globalThis.fetch is wrapped as
 // well so an absolute URL to a blocked target rejects immediately.
 //
 // Rules: IPC/path targets are allowed. Remote hosts are blocked. On loopback, the fixed ports
@@ -84,7 +84,7 @@ function isBlocked({ ipc, host, port }) {
 function blockedError(host, port) {
   const err = new Error(
     `[networkGuard] blocked outbound connection to ${host}:${port}. ` +
-      'Mock node-fetch with server/__tests__/helpers/fakeOllama.js or stub fetch.',
+      'Mock server/net/fetch.js with server/__tests__/helpers/fakeOllama.js or stub fetch.',
   );
   err.code = 'ENETBLOCKED';
   return err;
@@ -163,7 +163,7 @@ function failOnViolations(where) {
   const lines = found.map((v) => `  - ${v.via} ${v.host}:${v.port}\n${String(v.stack).split('\n').slice(2, 7).join('\n')}`);
   throw new Error(
     `[networkGuard] ${found.length} blocked outbound connection(s) during ${where}:\n${lines.join('\n')}\n` +
-      'Mock node-fetch with server/__tests__/helpers/fakeOllama.js or stub fetch.',
+      'Mock server/net/fetch.js with server/__tests__/helpers/fakeOllama.js or stub fetch.',
   );
 }
 

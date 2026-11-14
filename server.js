@@ -9,7 +9,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { registerDataRoutes } from './server/dataRoutes.js';
-import { limiterHandler, sendError, sendErrorFrom, sseError } from './server/errors.js';
+import { errorRow, limiterHandler, sendError, sendErrorFrom, sseError } from './server/errors.js';
 import { configureLog, REQUEST_ID_HEADER, requestContext } from './server/log.js';
 import { installProcessGuards } from './server/processGuards.js';
 import { setRedactDataDir } from './server/redact.js';
@@ -41,6 +41,7 @@ import { restoreGateMiddleware } from './server/backup/lock.js';
 import { previewMigrationExitCode } from './server/db/errors.js';
 import { EXIT_RESTORE_RECOVERY, reconcileRestoreJournal } from './server/backup/restore.js';
 import { startBackupScheduler, stopBackupScheduler } from './server/backup/service.js';
+import { abortSecondCopy, resumeSecondCopy } from './server/backup/secondCopy.js';
 import { drainBackupWorker, resumeBackupWorker } from './server/backup/worker/client.js';
 import { secretsPrimer } from './server/secrets/index.js';
 import { registerSecretsRoutes } from './server/secretsRoutes.js';
@@ -643,6 +644,7 @@ export async function startServer({ port, host, handleSignals = false, log = fal
   }
   clearDbShutdown();
   resumeBackupWorker();
+  resumeSecondCopy();
   // Finish or undo an interrupted backup restore before the database opens.
   // If recovery cannot finish, refuse to start: opening the database now could create an empty one
   // next to the half-moved real files.
@@ -702,6 +704,8 @@ export async function startServer({ port, host, handleSignals = false, log = fal
           server.close(() => resolve());
           server.closeAllConnections?.();
         });
+        // A running second copy is cut off first (it leaves only temp files and is retried at the next start).
+        abortSecondCopy();
         // Backup worker: let a running operation finish (up to 1.5 s), else terminate it, so no worker
         // thread holds the database or a partial file when the handle closes. Inside the 3 s hard exit.
         await Promise.all([closed, drainBackupWorker({ timeoutMs: 1500 }).catch(() => {})]);
@@ -790,6 +794,12 @@ if (!process.env.VITEST) {
       if (err?.code === 'desktop_handshake') {
         console.error('Desktop startup failed: invalid handshake.');
         process.exit(2);
+      }
+      // A built app whose design is newer than this version: say what is newer (the open database call wraps the cause).
+      const tooNew = [err, err?.cause].find((e) => e?.code === 'spec_too_new');
+      if (tooNew) {
+        console.error(`${tooNew.sentence} ${errorRow('spec_too_new').action}`);
+        process.exit(1);
       }
       if (isDbError(err)) console.error(`Database unavailable: ${err.code}`);
       // Only the Studio preview child reports a failed table update with its own exit code (not the backup step).

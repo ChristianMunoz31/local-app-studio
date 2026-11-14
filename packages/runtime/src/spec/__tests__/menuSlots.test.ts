@@ -23,8 +23,8 @@ const issues = (menu: unknown, opts = {}) => {
 describe('the allow list module', () => {
   it('names the two slots, the parts and the limits', () => {
     expect([...MENU_SLOTS]).toEqual(['start', 'end']);
-    expect([...MENU_PARTS]).toEqual(['Button', 'Link', 'SearchBox', 'QuickAdd', 'Text', 'Row']);
-    expect([...MENU_ROW_PARTS]).toEqual(['Button', 'Link', 'SearchBox', 'QuickAdd', 'Text']);
+    expect([...MENU_PARTS]).toEqual(['Button', 'Link', 'SearchBox', 'GlobalSearch', 'QuickAdd', 'Text', 'Row']);
+    expect([...MENU_ROW_PARTS]).toEqual(['Button', 'Link', 'SearchBox', 'GlobalSearch', 'QuickAdd', 'Text']);
     expect(MENU_LIMITS).toEqual({ perSlot: 6, layers: 24 });
     expect(Object.isFrozen(MENU_LIMITS)).toBe(true);
   });
@@ -32,8 +32,8 @@ describe('the allow list module', () => {
   it('menuTypeProblem words the refusal for the top level and for a row', () => {
     expect(menuTypeProblem('Button', false)).toBeNull();
     expect(menuTypeProblem('Row', false)).toBeNull();
-    expect(menuTypeProblem('Row', true)).toBe('A row in the menu bar can only hold: Button, Link, SearchBox, QuickAdd and Text.');
-    expect(menuTypeProblem('DataTable', false)).toBe('The menu bar can only hold: Button, Link, SearchBox, QuickAdd, Text and Row.');
+    expect(menuTypeProblem('Row', true)).toBe('A row in the menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd and Text.');
+    expect(menuTypeProblem('DataTable', false)).toBe('The menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd, Text and Row.');
     expect(menuTypeProblem('Divider', true)).not.toBeNull();
   });
 
@@ -59,6 +59,9 @@ describe('the schema accepts', () => {
     ['a Text', layer('t', 'Text', {}, 'Hello')],
     ['a SearchBox with a placeholder', layer('s', 'SearchBox', { placeholder: 'Find a crew' })],
     ['a SearchBox with no props', layer('s', 'SearchBox')],
+    ['a GlobalSearch with no props', layer('g', 'GlobalSearch')],
+    ['a GlobalSearch with a placeholder', layer('g', 'GlobalSearch', { placeholder: 'Find anything' })],
+    ['a Row with a GlobalSearch', layer('r', 'Row', {}, [layer('g', 'GlobalSearch')])],
     ['a Row with a Button', layer('r', 'Row', {}, [button('b')])],
   ])('%s in either slot, with the catalog checks', (_name, part) => {
     for (const slot of MENU_SLOTS) {
@@ -73,6 +76,13 @@ describe('the schema accepts', () => {
     expect(issues({ start: [{ ...button('a'), sizing: { width: 'half' } }] })).toEqual([]);
   });
 
+  it('refuses what a menu GlobalSearch may not carry, and a part still refused next to it', () => {
+    const r = validateAppSpec(withMenu({ end: [layer('g', 'GlobalSearch', { source: 'open_crews' })] }), { ...CATALOG_CHECKS });
+    expect(r.ok).toBe(false);
+    expect(r.issues.map((i) => i.code)).toEqual(['invalid_props']);
+    expect(issues({ end: [layer('g', 'GlobalSearch'), layer('x', 'Kanban')] })).toEqual([['menu.end.1.type', 'menu_part_not_allowed']]);
+  });
+
   it('keeps the slots in the stored spec', () => {
     const r = validateAppSpec(withMenu({ end: [button('a')] }));
     expect(r.ok && r.value.menu).toEqual({ position: 'top', style: 'icons-and-labels', end: [button('a')] });
@@ -84,7 +94,7 @@ describe('validateAppSpec refuses, on its own (no catalog hook)', () => {
     const r = validateAppSpec(withMenu({ end: [layer('x', type)] }));
     expect(r.ok).toBe(false);
     expect(r.issues).toEqual([
-      { path: 'menu.end.0.type', code: 'menu_part_not_allowed', message: 'The menu bar can only hold: Button, Link, SearchBox, QuickAdd, Text and Row.' },
+      { path: 'menu.end.0.type', code: 'menu_part_not_allowed', message: 'The menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd, Text and Row.' },
     ]);
   });
 
@@ -95,8 +105,8 @@ describe('validateAppSpec refuses, on its own (no catalog hook)', () => {
   it('a Row inside a Row, and a part that is not for a row', () => {
     const r = validateAppSpec(withMenu({ start: [layer('r', 'Row', {}, [button('a'), layer('r2', 'Row', {}, [button('b')]), layer('d', 'DataTable')])] }));
     expect(r.issues).toEqual([
-      { path: 'menu.start.0.children.1.type', code: 'menu_part_not_allowed', message: 'A row in the menu bar can only hold: Button, Link, SearchBox, QuickAdd and Text.' },
-      { path: 'menu.start.0.children.2.type', code: 'menu_part_not_allowed', message: 'A row in the menu bar can only hold: Button, Link, SearchBox, QuickAdd and Text.' },
+      { path: 'menu.start.0.children.1.type', code: 'menu_part_not_allowed', message: 'A row in the menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd and Text.' },
+      { path: 'menu.start.0.children.2.type', code: 'menu_part_not_allowed', message: 'A row in the menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd and Text.' },
     ]);
   });
 

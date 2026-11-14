@@ -5,9 +5,9 @@
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { installFakeOllama, textReply, toolReply } from './helpers/fakeOllama.js';
 import { __resetAiForTests, getAiClient } from '../ai/index.js';
 import { __resetPendingActionsForTests } from '../agents/pendingActions.js';

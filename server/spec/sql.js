@@ -131,26 +131,41 @@ export function createTableStatement(table, name = table.id) {
 }
 
 /**
+ * One single column index. Reference indexes are plain CREATE INDEX (a new table or a new column); derived ones (indexes.js)
+ * pass `ifNotExists`, so a script that asks for one again is a no-op.
  * @param {string} tableId
  * @param {string} fieldId
+ * @param {{ ifNotExists?: boolean }} [opts]
  * @returns {string}
  */
-export const createIndexStatement = (tableId, fieldId) =>
-  `CREATE INDEX ${quoteId(`idx:${tableId}:${fieldId}`)} ON ${quoteId(tableId)} (${quoteId(fieldId)});`;
+export const createIndexStatement = (tableId, fieldId, opts = {}) =>
+  `CREATE INDEX ${opts.ifNotExists === true ? 'IF NOT EXISTS ' : ''}${quoteId(`idx:${tableId}:${fieldId}`)} ON ${quoteId(tableId)} (${quoteId(fieldId)});`;
+
+/**
+ * @param {string} tableId
+ * @param {string[]} fieldIds
+ * @returns {string[]} one CREATE INDEX IF NOT EXISTS per derived field, in the order given
+ */
+export const derivedIndexStatements = (tableId, fieldIds) =>
+  fieldIds.map((id) => createIndexStatement(tableId, id, { ifNotExists: true }));
 
 /**
  * @param {{ id: string, fields: object[] }} table
- * @returns {string[]} one CREATE INDEX per reference field, field order
+ * @param {string[]} [derived] derived index fields of the table (indexes.js)
+ * @returns {string[]} one CREATE INDEX per reference field in field order, then the derived ones
  */
-export const indexStatements = (table) =>
-  table.fields.filter((f) => f.type === 'reference').map((f) => createIndexStatement(table.id, f.id));
+export const indexStatements = (table, derived = []) => [
+  ...table.fields.filter((f) => f.type === 'reference').map((f) => createIndexStatement(table.id, f.id)),
+  ...derivedIndexStatements(table.id, derived),
+];
 
 /**
  * CREATE TABLE plus its indexes.
  * @param {{ id: string, fields: object[] }} table
+ * @param {string[]} [derived] derived index fields of the table
  * @returns {string}
  */
-export const tableBlock = (table) => [createTableStatement(table), ...indexStatements(table)].join('\n');
+export const tableBlock = (table, derived = []) => [createTableStatement(table), ...indexStatements(table, derived)].join('\n');
 
 /**
  * A whole migration file: 3 line header, blocks separated by an empty line, one final newline.
@@ -166,6 +181,19 @@ export function fileText(kind, blocks) {
 /**
  * The full create script for tables already in import order.
  * @param {Array<{ id: string, fields: object[] }>} tablesInOrder
+ * @param {Map<string, string[]>} [derived] table id to derived index fields (indexes.js)
  * @returns {string}
  */
-export const createSqlText = (tablesInOrder) => fileText('create', tablesInOrder.map(tableBlock));
+export const createSqlText = (tablesInOrder, derived = new Map()) =>
+  fileText('create', tablesInOrder.map((t) => tableBlock(t, derived.get(t.id) ?? [])));
+
+/**
+ * The derived indexes of a whole spec as a script of idempotent statements (ADR-014), apart from createSql.
+ * @param {string[]} tableIdsInOrder table ids in import order
+ * @param {Map<string, string[]>} derived table id to derived index fields (indexes.js)
+ * @returns {string} one line per index, one final newline; '' when there is none
+ */
+export function derivedIndexSqlText(tableIdsInOrder, derived) {
+  const lines = tableIdsInOrder.flatMap((id) => derivedIndexStatements(id, derived.get(id) ?? []));
+  return lines.length ? `${lines.join('\n')}\n` : '';
+}

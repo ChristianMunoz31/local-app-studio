@@ -6,10 +6,10 @@ import { PUBLIC_BUILD } from './helpers/proBuild.js';
 import { closeTestDb, createTestDb, resetDb } from './helpers/testDb.js';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 vi.mock('../license/index.js', async (importOriginal) => (await import('./helpers/pro.js')).mockLicenseModule(importOriginal));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { advisorSystemPrompt, AUTO_ADVICE_REQUEST } from '../assistant/advisorPrompt.js';
 import { ASSISTANT_PERSONALITY, ASSISTANT_VOICE, assistantSystemPrompt } from '../agents/prompts.js';
 import { ASSISTANT_TOOLS } from '../agents/assistantTools.js';

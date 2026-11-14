@@ -219,6 +219,26 @@ describe('planDrop: source parts', () => {
   it('a Checklist on Home binds the only table with a yes/no field', () => {
     expect(bound(drop('Checklist', 'home')).layer.props).toMatchObject({ source: 'all_tasks', field: 'done' });
   });
+  it('a Kanban on Home binds the list of the table with a choice field and that field', () => {
+    const plan = drop('Kanban', 'home');
+    expect(bound(plan).layer.props).toMatchObject({ source: 'all_crews', field: 'status' });
+    expect(bound(plan).added).toBeNull();
+    valid(plan, spec, pageOf(spec, 'home'));
+  });
+  it('a Kanban on a page with no list adds a list of the table with a choice field', () => {
+    const plan = drop('Kanban', 'blank');
+    expect(bound(plan).added).toMatchObject({ table: 'crews', mode: 'list' });
+    expect(bound(plan).layer.props).toMatchObject({ field: 'status' });
+    valid(plan, spec, pageOf(spec, 'blank'));
+  });
+  it('a Kanban offers Add a field, in the repo words, when no table has a choice field', () => {
+    const noSelect = specOf((i) => {
+      i.tables = i.tables?.map((t) => ({ ...t, fields: t.fields.filter((f) => f.type !== 'select') }));
+    });
+    const plan = drop('Kanban', 'blank', noSelect);
+    expect(plan).toMatchObject({ kind: 'offer', offer: { kind: 'no_field', needs: [{ prop: 'field', types: ['select'] }] } });
+    if (plan.kind === 'offer') expect(offerWords(plan.offer)).toBe('No table has the field this part needs: a choice field.');
+  });
   it('a Checklist on Other (Crews only) asks or adds on the fitting table', () => {
     const p = bound(drop('Checklist', 'other'));
     expect(p.added).toMatchObject({ id: 'tasks', table: 'tasks' });

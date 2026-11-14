@@ -7,7 +7,7 @@ import { PUBLIC_BUILD } from './helpers/proBuild.js';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 vi.mock('../secrets/index.js', async (importOriginal) => {
   const actual = await importOriginal();
   return { ...actual, getSecret: vi.fn(actual.getSecret), peekSecret: vi.fn(actual.peekSecret) };
@@ -17,7 +17,7 @@ vi.mock('../secrets/crypto.js', async (importOriginal) => {
   return { ...actual, decryptSecret: vi.fn(actual.decryptSecret) };
 });
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { getSecret, peekSecret } from '../secrets/index.js';
 import { decryptSecret, encryptSecret, last4 } from '../secrets/crypto.js';
 import { CLOUD_HOST, CLOUD_KEY, configureCloud, installCloudAndOllama, resetCloud } from './helpers/fakeCloud.js';

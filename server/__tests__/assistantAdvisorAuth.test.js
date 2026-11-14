@@ -6,9 +6,9 @@ import request from 'supertest';
 vi.mock('../../loadEnv.js', () => ({}));
 vi.mock('../assistant/advisorService.js', () => ({ generateAdvice: vi.fn() }));
 // The route health-probes Ollama before generateAdvice; keep that probe on a fake, never the real host.
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { generateAdvice } from '../assistant/advisorService.js';
 import { installFakeOllama } from './helpers/fakeOllama.js';
 import { __resetAiForTests } from '../ai/index.js';

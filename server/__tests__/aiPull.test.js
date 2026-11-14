@@ -1,14 +1,14 @@
 // POST /api/settings/ai/pull: validation, SSE progress, abort, lock, idle timeout and error
-// frames, on a fake Ollama (mocked node-fetch). Upstream text must never reach the client.
+// frames, on a fake Ollama (mocked fetch seam). Upstream text must never reach the client.
 import http from 'node:http';
 import { afterAll, afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { installFakeOllama, pullFrames } from './helpers/fakeOllama.js';
 import { __resetAiForTests, describeAi } from '../ai/index.js';
 import { AI_SETTINGS_KEY } from '../ai/settings.js';

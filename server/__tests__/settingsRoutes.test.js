@@ -10,7 +10,7 @@ vi.mock('../../scripts/release/releaseConfig.js', async (importOriginal) => ({
   ...(await importOriginal()),
   RELEASE_CONFIG: Object.freeze({ sourceRepo: 'acme/notes', releasesRepo: 'acme/notes-releases' }),
 }));
-vi.mock('node-fetch', () => ({
+vi.mock('../net/fetch.js', () => ({
   default: vi.fn(async () => ({
     ok: true,
     status: 200,
@@ -42,7 +42,7 @@ vi.mock('../dataAccess.js', async () => {
   };
 });
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { registerSettingsRoutes } from '../settingsRoutes.js';
 import { __resetNetPolicyForTests, networkRequiredBody } from '../netPolicy.js';
 import { __resetUpdateCacheForTests } from '../updateCheck.js';

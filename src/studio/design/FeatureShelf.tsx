@@ -3,7 +3,7 @@
 // count are the ones of the Features page (showcase/SearchField, CategoryPills, ResultCount), so the same words give the same
 // names in the same order in both places. Each tile is one Tab stop: its Add button.
 import { useDraggable } from '@dnd-kit/core';
-import { Fragment, useContext, useId, useMemo } from 'react';
+import { Fragment, memo, useCallback, useContext, useEffect, useId, useMemo, useRef } from 'react';
 import type { KeyboardEvent, ReactNode, RefObject } from 'react';
 import type { FeatureLibrary } from '@/catalog/features';
 import type { Theme } from '@local-app-studio/runtime/spec/schema';
@@ -44,9 +44,15 @@ interface PaletteTileProps {
   needsTable: boolean;
 }
 
-function PaletteTile({ entry, library, theme, selected, nameRanges, onSelect, onAdd, needsTable }: PaletteTileProps) {
+/** The hook is here and the tile is a memo: dnd-kit re-renders every draggable as the pointer passes over the page, and a tile's preview is not cheap. */
+function PaletteTile(props: PaletteTileProps) {
+  const { entry } = props;
+  const { setNodeRef, listeners, isDragging } = useDraggable({ id: `palette:${entry.key}`, data: { kind: 'palette', key: entry.key }, disabled: entry.status === 'needs_repair' });
+  return <TileBody {...props} setNodeRef={setNodeRef} listeners={listeners} isDragging={isDragging} />;
+}
+
+const TileBody = memo(function TileBody({ entry, library, theme, selected, nameRanges, onSelect, onAdd, needsTable, setNodeRef, listeners, isDragging }: PaletteTileProps & Pick<ReturnType<typeof useDraggable>, 'setNodeRef' | 'listeners' | 'isDragging'>) {
   const damaged = entry.status === 'needs_repair';
-  const { setNodeRef, listeners, isDragging } = useDraggable({ id: `palette:${entry.key}`, data: { kind: 'palette', key: entry.key }, disabled: damaged });
   return (
     // The tile is a list item of the group's list and is itself the drag source.
     <FeatureTile
@@ -80,7 +86,7 @@ function PaletteTile({ entry, library, theme, selected, nameRanges, onSelect, on
       }
     />
   );
-}
+});
 
 interface FeaturesPaneProps {
   features: readonly FeatureRecord[];
@@ -96,8 +102,20 @@ interface FeaturesPaneProps {
   note: string | null;
 }
 
+/** A callback that keeps its identity and calls the newest one, so a memo that holds it is not drawn again for a new closure. */
+function useStable<A extends unknown[]>(fn: (...args: A) => void): (...args: A) => void {
+  const latest = useRef(fn);
+  useEffect(() => {
+    latest.current = fn;
+  });
+  return useCallback((...args: A) => latest.current(...args), []);
+}
+
 function FeaturesPane({ features, library, theme, filters, onFilters, selectedKey, onSelect, onAdd, searchRef, note }: FeaturesPaneProps) {
   const design = useContext(DesignContext);
+  // The tiles hold a live preview each: they are drawn again only when their own entry changes, not for every render of the session.
+  const select = useStable(onSelect);
+  const add = useStable(onAdd);
   const hides = design?.builder?.hidesEntry;
   const entries = useMemo(() => shelfEntries(features).filter((e) => hides === undefined || !hides(e.key)), [features, hides]);
   const shown = useMemo(() => searchEntries(entries, { ...filters, sort: 'default' }), [entries, filters]);
@@ -125,7 +143,7 @@ function FeaturesPane({ features, library, theme, filters, onFilters, selectedKe
               {sub.label !== null && <h4 className="text-xs font-semibold text-slate-slate300">{`${sub.label} (${sub.count})`}</h4>}
               <ul className="space-y-2">
                 {sub.hits.map(({ entry, nameRanges }) => (
-                  <PaletteTile key={entry.key} entry={entry} library={library} theme={theme} selected={selectedKey === entry.key} nameRanges={nameRanges} onSelect={onSelect} onAdd={onAdd} needsTable={entryNeedsTable(entry, library, design?.ctx ?? null)} />
+                  <PaletteTile key={entry.key} entry={entry} library={library} theme={theme} selected={selectedKey === entry.key} nameRanges={nameRanges} onSelect={select} onAdd={add} needsTable={entryNeedsTable(entry, library, design?.ctx ?? null)} />
                 ))}
               </ul>
             </Fragment>

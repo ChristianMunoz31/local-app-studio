@@ -1,11 +1,11 @@
 // Turning cloud AI off: the exact order of operations, and that nothing can reach the cloud host
 // afterwards, including a call that was already queued when the user turned it off. Fake cloud
-// (api.example.com) and fake Ollama behind a mocked node-fetch; nothing real is contacted.
+// (api.example.com) and fake Ollama behind a mocked fetch seam; nothing real is contacted.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PUBLIC_BUILD } from './helpers/proBuild.js';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 // Fixture category alpha (shared by default, noun "items") stands in for a module category.
 vi.mock('../modules/studio.data.js', (orig) => import('./helpers/fixtureModules.js').then((m) => m.withFixtureCategories(orig, { keepReal: true })));
 
@@ -52,7 +52,7 @@ vi.mock('../auditHook.js', async (importOriginal) => {
   };
 });
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { CLOUD_HOST, CLOUD_KEY, configureCloud, installCloudAndOllama, resetCloud } from './helpers/fakeCloud.js';
 import { closeTestDb, createTestDb, resetDb } from './helpers/testDb.js';
 import { __resetAiForTests, classifyAiError, getAiClient, isAiQueueFull, isCloudStillAllowed, withheldMessage } from '../ai/index.js';

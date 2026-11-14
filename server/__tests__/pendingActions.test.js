@@ -27,6 +27,12 @@ describe('pending actions', () => {
     expect(takePendingAction(token, 'conv-1')).toBeNull();
   });
 
+  it('keeps the origin mark the server computed beside the action, and null when none was given', () => {
+    const origin = { fromRecord: true, unasked: false, fields: ['Name'] };
+    expect(takePendingAction(createPendingAction(action({ origin })), 'conv-1').origin).toEqual(origin);
+    expect(takePendingAction(createPendingAction(action()), 'conv-1').origin).toBeNull();
+  });
+
   it('is bound to its conversation and a mismatch does not consume it', () => {
     const token = createPendingAction(action());
     expect(takePendingAction(token, 'conv-2')).toBeNull();

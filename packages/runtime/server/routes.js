@@ -3,7 +3,8 @@
 // server/db/query.js with identifiers from the compiled spec.
 //
 //   GET    /api/data                  app info, data folder, tables with row counts
-//   GET    /api/data/:table           { rows, total, limit, offset }
+//   GET    /api/data/_search?q=       global search: { groups: [{ table, label, pageId, total, rows: [{ id, title }] }] }
+//   GET    /api/data/:table           { rows, total, limit, offset } (total=0 in the query skips the count: no total key)
 //   GET    /api/data/:table/stats     code-computed counts and totals of the numeric fields; with groupBy, per group
 //   GET    /api/data/:table/:id       one row
 //   POST   /api/data/:table           201 one row (a numbered field is filled in; `applied` lists what the rules set)
@@ -14,16 +15,21 @@
 // Errors: 404 unknown_table, 400 invalid_query { field }, 400 invalid_record { field }, 404 not_found,
 // 409 record_in_use { table }, 503 db_unavailable, 500 server_error. Only error codes are logged.
 import path from 'node:path';
-import { count, pingDb, remove, resolveDbPath, select, selectOne, toDbError } from '../../../server/db/index.js';
+import { count, countSearch, pingDb, remove, resolveDbPath, select, selectOne, selectSearch, toDbError } from '../../../server/db/index.js';
 import { sendError } from '../../../server/errors.js';
 import { getAppSpec, getCompiledSpec } from '../../../server/spec/source.js';
-import { parseDataQuery, parseGroupQuery } from './params.js';
+import { MAX_SEARCH_CHARS, parseDataQuery, parseGroupQuery, textFieldIds } from './params.js';
 import { computeGroups, computeStats } from './stats.js';
 import { registerImportRoute } from './importCsv.js';
 import { createRecord, updateRecord } from './write.js';
 
 const sendUnavailable = (res) => sendError(res, 'db_unavailable', { message: 'Local database is unavailable.' });
 const MAX_ID_CHARS = 200;
+// Global search (ADR-016): at most this many rows of each table.
+const SEARCH_ROWS_PER_TABLE = 5;
+// A shorter term (trimmed, in code points) would take the LIKE path of every table on each keystroke: no groups, not an error.
+const SEARCH_MIN_CODE_POINTS = 3;
+const SEARCH_ORDER = Object.freeze([{ column: 'created_at', dir: 'desc' }, { column: 'id', dir: 'asc' }]);
 
 const isPlainObject = (v) => v !== null && typeof v === 'object' && !Array.isArray(v);
 
@@ -113,6 +119,35 @@ export function registerRuntimeRoutes(app) {
     }),
   );
 
+  // Registered before /:table (a table id cannot start with "_", so "_search" is never a table). A table is searched when it
+  // has a text field and a record page (a route ending in /:id with a record source of it) to open a hit on.
+  app.get(
+    '/api/data/_search',
+    route(async (req, res) => {
+      const { compiled, spec } = context();
+      const raw = req.query.q;
+      if (raw !== undefined && (typeof raw !== 'string' || raw.length > MAX_SEARCH_CHARS)) {
+        return sendError(res, 'invalid_query', { message: `q must be text of at most ${MAX_SEARCH_CHARS} characters.`, extra: { field: 'q' } });
+      }
+      const term = raw ?? '';
+      const groups = [];
+      if ([...term.trim()].length < SEARCH_MIN_CODE_POINTS || !compiled) return res.json({ data: { groups } });
+      for (const t of spec?.tables ?? []) {
+        const columns = Object.hasOwn(compiled.tables, t.id) ? textFieldIds(compiled, t.id) : [];
+        const page = columns.length === 0 ? undefined : recordPageOf(spec, t.id);
+        if (!page) continue;
+        const search = { term, columns };
+        const total = countSearch(t.id, { search });
+        if (total === 0) continue;
+        const titleField = compiled.titleFields?.[t.id] ?? 'id';
+        const found = selectSearch(t.id, { columns: [...new Set(['id', titleField])], search, orderBy: SEARCH_ORDER, limit: SEARCH_ROWS_PER_TABLE });
+        const rows = found.map((r) => ({ id: r.id, title: typeof r[titleField] === 'string' && r[titleField] !== '' ? r[titleField] : r.id }));
+        groups.push({ table: t.id, label: t.label, pageId: page.id, total, rows });
+      }
+      return res.json({ data: { groups } });
+    }),
+  );
+
   // Registered before /:id so "stats" is not taken for an id.
   app.get(
     '/api/data/:table/stats',
@@ -131,8 +166,13 @@ export function registerRuntimeRoutes(app) {
     withTable(async (req, res, { compiled, spec, table }) => {
       const q = parseDataQuery(compiled, spec, table, req.query);
       if (!q.ok) return sendError(res, 'invalid_query', { message: q.message, extra: { field: q.field } });
-      const rows = select(table, { where: q.where, search: q.search, orderBy: q.orderBy, limit: q.limit, offset: q.offset });
-      const total = count(table, { where: q.where, search: q.search });
+      const query = { where: q.where, search: q.search, orderBy: q.orderBy, limit: q.limit, offset: q.offset };
+      // With a search the full text index (when the table has one) narrows the rows; the rows and total are the same.
+      const rows = q.search ? selectSearch(table, query) : select(table, query);
+      // With total=0 the count is skipped and the body has no total key; clients that need a total do not send the flag.
+      if (!q.wantTotal) return res.json({ data: { rows, limit: q.limit, offset: q.offset } });
+      const filter = { where: q.where, search: q.search };
+      const total = q.search ? countSearch(table, filter) : count(table, filter);
       res.json({ data: { rows, total, limit: q.limit, offset: q.offset } });
     }),
   );
@@ -191,6 +231,13 @@ export function registerRuntimeRoutes(app) {
       }
       return res.json({ data: { id, deleted: true } });
     }),
+  );
+}
+
+/** The first page whose route ends in /:id and that has a record source of the table, or undefined. */
+function recordPageOf(spec, table) {
+  return (spec?.pages ?? []).find(
+    (p) => typeof p.route === 'string' && p.route.endsWith('/:id') && (p.sources ?? []).some((s) => s.mode === 'record' && s.table === table),
   );
 }
 

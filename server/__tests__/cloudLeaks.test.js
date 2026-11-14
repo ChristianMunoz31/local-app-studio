@@ -9,12 +9,12 @@ import request from 'supertest';
 import { strToU8, zipSync } from 'fflate';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 // Fixture categories (alpha shared by default, beta not) and pages next to the real Studio tools.
 vi.mock('../modules/studio.data.js', (orig) => import('./helpers/fixtureModules.js').then((m) => m.withFixtureCategories(orig, { keepReal: true })));
 vi.mock('../../src/modules/studio.assistant.js', (orig) => import('./helpers/fixtureModules.js').then((m) => m.withFixturePages(orig)));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { CLOUD_HOST, SENTINELS, configureCloud, installCloudAndOllama, resetCloud } from './helpers/fakeCloud.js';
 import { scanModelCalls } from './helpers/modelCallScan.js';
 import { closeTestDb, createTestDb, resetDb, rowsOf } from './helpers/testDb.js';

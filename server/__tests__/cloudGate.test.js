@@ -6,9 +6,9 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PUBLIC_BUILD } from './helpers/proBuild.js';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { installFakeOllama } from './helpers/fakeOllama.js';
 import { CLOUD_BASE_URL, CLOUD_HOST, configureCloud, installCloudAndOllama, resetCloud } from './helpers/fakeCloud.js';
 import { __resetAiForTests, describeAi, getAiClient, getAiStatus } from '../ai/index.js';

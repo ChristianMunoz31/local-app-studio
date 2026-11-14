@@ -1,7 +1,7 @@
 // The runtime's own layer renderer (phase 2 contract, 9.1). The vendored RenderLayer pulls in the editor stores and the
 // drag and drop context, so a built app would load the editor chunk. This one maps a layer to its catalog component and
 // nothing else: no variables, no zod parse, no editor.
-import { Component } from 'react';
+import { Component, memo } from 'react';
 import { PART_COMPONENTS } from '@/catalog/components';
 import { ROW_CLASS, itemClass, sizingSegments } from '../catalog/parts/sizingClasses';
 import { gridItemClass } from '../catalog/parts/gridClasses';
@@ -56,20 +56,23 @@ function renderChildren(layer, components) {
 }
 
 /**
- * Renders a layout layer and its children.
- * @param {{ layer: { id: string, type: string, sizing?: unknown, grid?: unknown, props: Record<string, unknown>, children: unknown[] | string }, components?: Record<string, import('react').ComponentType<Record<string, unknown>>> }} props
+ * Renders a layout layer and its children. A memo: a layer that did not change (the spec keeps the objects of the parts an edit did
+ * not touch) is not drawn again.
  */
-export function SpecRenderer({ layer, components = PART_COMPONENTS }) {
-  const Part = Object.hasOwn(components, layer.type) ? components[layer.type] : null;
-  if (!Part) return <p className={NOTE}>This part is not available.</p>;
-  const children = typeof layer.children === 'string' ? layer.children : renderChildren(layer, components);
-  return (
-    <LayerBoundary>
-      <Part {...layer.props} data-testid={layer.id} data-layer-id={layer.id}>
-        {children}
-      </Part>
-    </LayerBoundary>
-  );
-}
+export const SpecRenderer = memo(
+  /** @param {{ layer: { id: string, type: string, sizing?: unknown, grid?: unknown, props: Record<string, unknown>, children: unknown[] | string }, components?: Record<string, import('react').ComponentType<Record<string, unknown>>> }} props */
+  function SpecRenderer({ layer, components = PART_COMPONENTS }) {
+    const Part = Object.hasOwn(components, layer.type) ? components[layer.type] : null;
+    if (!Part) return <p className={NOTE}>This part is not available.</p>;
+    const children = typeof layer.children === 'string' ? layer.children : renderChildren(layer, components);
+    return (
+      <LayerBoundary>
+        <Part {...layer.props} data-testid={layer.id} data-layer-id={layer.id}>
+          {children}
+        </Part>
+      </LayerBoundary>
+    );
+  },
+);
 
 export default SpecRenderer;

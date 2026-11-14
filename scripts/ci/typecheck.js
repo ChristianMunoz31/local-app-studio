@@ -1,6 +1,7 @@
 // Type check for CI and the local gate: `tsc --noEmit`, failing on any error outside src/vendor/.
-// src/vendor/ is the vendored ui-builder, kept in the repo but unused; its errors are counted and printed,
-// never fatal. The pure functions are exported for the unit test.
+// The vendored ui-builder that lived in src/vendor/ is gone, so that folder is empty (the count printed is 0). The
+// filter stays so a vendored folder added again keeps its upstream errors non-fatal; every other error fails.
+// The pure functions are exported for the unit test.
 // Usage: node scripts/ci/typecheck.js
 import { spawnSync } from 'node:child_process'
 import path from 'node:path'

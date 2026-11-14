@@ -94,7 +94,10 @@ async function dispatch(name, args = {}, policy) {
  * to correct its call.
  * @param {string} name
  * @param {Record<string, unknown>} args
- * @returns {Promise<{ ok: true, args: Record<string, unknown>, label?: string } | { ok: false, error: string }>}
+ * @returns {Promise<{ ok: true, args: Record<string, unknown>, label?: string, unchanged?: string[], stored?: Record<string, string>,
+ *   optionFields?: string[] } | { ok: false, error: string }>}
+ * `unchanged` (an update): the field ids equal to the stored value. `stored` (an update): the stored text of each changed text
+ * field. `optionFields`: the changed fields with spec-defined options.
  */
 export async function precheckWrite(name, args = {}) {
   if (RUNTIME) return await precheckRuntimeWrite(name, args);

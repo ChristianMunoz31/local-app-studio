@@ -11,7 +11,7 @@ import { placeOf, setPlace, stepInGrid } from '../lib/gridLayout';
 import { HANDLE_WORDS, columnsSpan, heightWords, rowsSpan, widthWords, withNarrow } from '../lib/gridWords';
 import { ChromePortal } from './ChromeLayer';
 import { blockName } from './designLabels';
-import { useDesign } from './DesignContext';
+import { useDesign, useLive } from './DesignContext';
 import { cellAt, measureGrid, narrowGrid } from './gridMetrics';
 import { gridReach, placeRefusal, stepRefusal } from './gridSteps';
 
@@ -47,7 +47,8 @@ function gridElement(box: HTMLElement | null): Element | null {
 }
 
 function Handle({ axis, layer, parent, name, place }: Props & { axis: Axis; place: GridPlace }) {
-  const { root, apply, announceGrid, previewGrid, gridPreview } = useDesign();
+  const { root, apply, announceGrid, previewGrid } = useDesign();
+  const gridPreview = useLive('gridPreview');
   const box = useRef<HTMLDivElement | null>(null);
   const drag = useRef<Drag | null>(null);
   const reach = useMemo(() => gridReach(root, layer.id), [root, layer.id]);

@@ -1,13 +1,13 @@
 // POST /api/assistant/advice through the real server.js with generateAdvice/streamAdvice mocked and
-// a fake Ollama behind node-fetch (the route resolves the chat client before calling the service).
+// a fake Ollama behind the fetch seam (the route resolves the chat client before calling the service).
 import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
 vi.mock('../assistant/advisorService.js', () => ({ generateAdvice: vi.fn(), streamAdvice: vi.fn() }));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { generateAdvice, streamAdvice } from '../assistant/advisorService.js';
 import { installFakeOllama } from './helpers/fakeOllama.js';
 import { __resetAiForTests } from '../ai/index.js';

@@ -1,5 +1,5 @@
 // Update check: semver compare in code, GitHub response handling, cache, and the opt-in gate.
-// node-fetch is mocked and every request goes through an injected fetchImpl: no network.
+// the fetch seam is mocked and every request goes through an injected fetchImpl: no network.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const h = vi.hoisted(() => ({ store: new Map() }));
@@ -9,7 +9,7 @@ vi.mock('../../scripts/release/releaseConfig.js', async (importOriginal) => ({
   ...(await importOriginal()),
   RELEASE_CONFIG: Object.freeze({ sourceRepo: 'acme/notes', releasesRepo: 'acme/notes-releases' }),
 }));
-vi.mock('node-fetch', () => ({ default: vi.fn(async () => { throw new Error('real fetch must not be used'); }) }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn(async () => { throw new Error('real fetch must not be used'); }) }));
 vi.mock('../dataAccess.js', () => ({
   getState: vi.fn(async (key, fallback = null) => (h.store.has(key) ? h.store.get(key) : fallback)),
   setState: vi.fn(async (key, value) => {
@@ -18,7 +18,7 @@ vi.mock('../dataAccess.js', () => ({
   }),
 }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { RELEASE_CONFIG } from '../../scripts/release/releaseConfig.js';
 import { NetworkOptInError, __resetNetPolicyForTests, setNetworkFeature } from '../netPolicy.js';
 import {

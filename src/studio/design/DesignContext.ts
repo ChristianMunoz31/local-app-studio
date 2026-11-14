@@ -1,5 +1,5 @@
 // What the canvas, its blocks, drop zones and the settings popover share. One provider (DesignSession), no store.
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useSyncExternalStore } from 'react';
 import type { CatalogData } from '@/catalog/context';
 import type { FeatureLibrary } from '@/catalog/features';
 import type { PartContext } from '@/catalog/types';
@@ -140,6 +140,63 @@ export interface DesignContextValue {
 }
 
 export const DesignContext = createContext<DesignContextValue | null>(null);
+
+/**
+ * What changes on every pointer move of a gesture (a width handle, a drag over a free Grid). It sits in a store of its own so a
+ * step re-renders only the parts that show it: the session keeps these three at rest in the context (a provider with no store,
+ * such as the menu bar's scope or a test, reads them there) and the store holds the live ones.
+ */
+export interface LiveState {
+  resizing: DesignContextValue['resizing'];
+  gridHover: GridHover | null;
+  gridPreview: GridPreview | null;
+}
+
+export interface LiveStore {
+  get(): LiveState;
+  subscribe(listener: () => void): () => void;
+  set<K extends keyof LiveState>(key: K, value: LiveState[K]): void;
+}
+
+export function createLiveStore(): LiveStore {
+  let state: LiveState = { resizing: null, gridHover: null, gridPreview: null };
+  const listeners = new Set<() => void>();
+  return {
+    get: () => state,
+    subscribe: (listener) => {
+      listeners.add(listener);
+      return () => void listeners.delete(listener);
+    },
+    set: (key, value) => {
+      if (Object.is(state[key], value)) return;
+      state = { ...state, [key]: value };
+      for (const listener of listeners) listener();
+    },
+  };
+}
+
+export const LiveContext = createContext<LiveStore | null>(null);
+const NO_SUBSCRIBE = (): (() => void) => () => undefined;
+
+/** One live value: from the session's store when there is one, else the context's own copy. */
+export function useLive<K extends keyof LiveState>(key: K): LiveState[K] {
+  const store = useContext(LiveContext);
+  const own = useDesign()[key];
+  return useSyncExternalStore(store === null ? NO_SUBSCRIBE : store.subscribe, () => (store === null ? own : store.get()[key]));
+}
+
+/**
+ * A live value seen through a filter: the value when `concerns` accepts it, else null. The snapshot is the store's own object or
+ * null, so it is stable between pointer moves that do not concern the caller and the caller draws again only for those that do.
+ */
+export function useLiveWhere<K extends keyof LiveState>(key: K, concerns: (value: NonNullable<LiveState[K]>) => boolean): LiveState[K] {
+  const store = useContext(LiveContext);
+  const own = useDesign()[key];
+  return useSyncExternalStore(store === null ? NO_SUBSCRIBE : store.subscribe, () => {
+    const value = store === null ? own : store.get()[key];
+    return value !== null && concerns(value as NonNullable<LiveState[K]>) ? value : null;
+  });
+}
 
 export function useDesign(): DesignContextValue {
   const value = useContext(DesignContext);

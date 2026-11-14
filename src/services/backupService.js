@@ -68,6 +68,9 @@ export const updateBackupSettings = (settings) => request('/api/backups/settings
 /** Turns automatic backups on or off. Resolves to { enabled, changedAt, reminderDismissedAt }. */
 export const setAutoBackup = (enabled) => request('/api/backups/auto', { method: 'PUT', body: { enabled } });
 
+/** Sets the second backup folder (a full path) or turns it off (null). Resolves to the secondCopy status. */
+export const setCopyTo = (folder) => request('/api/backups/copy-to', { method: 'PUT', body: { folder } });
+
 /** "Not now" on the Home reminder: the server remembers it for a week. */
 export const dismissAutoReminder = () => request('/api/backups/auto/dismiss-reminder', { method: 'POST', body: {} });
 

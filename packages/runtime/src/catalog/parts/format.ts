@@ -73,3 +73,8 @@ export function localToIso(local: string): string | undefined {
   const d = new Date(local);
   return local === '' || Number.isNaN(d.getTime()) ? undefined : d.toISOString();
 }
+
+/** What a list source returns per page: its own limit when a whole number from 1 up (cut at 200), else 50. The server's rule, so every surface agrees. */
+export function sourcePageSize(limit: unknown): number {
+  return typeof limit === 'number' && Number.isSafeInteger(limit) && limit >= 1 ? Math.min(limit, 200) : 50;
+}

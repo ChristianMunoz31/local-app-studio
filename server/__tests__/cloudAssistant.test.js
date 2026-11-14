@@ -1,7 +1,7 @@
 // Assistant (POST /api/assistant) on a cloud provider: tools whose category is withheld never run and
 // answer with a placeholder, tool results and history never leak a
 // withheld category, the stream says where it runs and carries one notice, and local Ollama is
-// unaffected. Fake provider behind a mocked node-fetch; nothing real is contacted.
+// unaffected. Fake provider behind a mocked fetch seam; nothing real is contacted.
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PUBLIC_BUILD } from './helpers/proBuild.js';
 // Pro is on for this file (the Pro gate itself is covered in proGating.test.js).
@@ -9,12 +9,12 @@ vi.mock('../license/index.js', async (importOriginal) => (await import('./helper
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 // Fixture pages and categories next to the real list_features tool (Studio has no Assistant pages of its own).
 vi.mock('../modules/studio.data.js', (orig) => import('./helpers/fixtureModules.js').then((m) => m.withFixtureCategories(orig, { keepReal: true })));
 vi.mock('../../src/modules/studio.assistant.js', (orig) => import('./helpers/fixtureModules.js').then((m) => m.withFixturePages(orig)));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { textReply, toolReply } from './helpers/fakeOllama.js';
 import { CLOUD_HOST, SENTINELS, configureCloud, installCloudAndOllama, resetCloud } from './helpers/fakeCloud.js';
 import { closeTestDb, createTestDb, resetDb, rowsOf } from './helpers/testDb.js';

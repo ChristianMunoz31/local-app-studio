@@ -3,7 +3,7 @@
 // (a thin vertical bar between the parts of a Row, which sit side by side). SideZone is the place at the left or right side of a
 // block, shown only while dragging: a part dropped there sits beside the block (docs/DESIGN.md "Parts side by side").
 import { useDroppable } from '@dnd-kit/core';
-import { useCallback, useId, useRef } from 'react';
+import { memo, useCallback, useId, useRef } from 'react';
 import type { RefObject } from 'react';
 import type { LayoutLayer } from '@local-app-studio/runtime/spec/schema';
 import { ChromePortal } from './ChromeLayer';
@@ -66,14 +66,26 @@ const SIDE_EDGE: Readonly<Record<SideTarget['side'], string>> = {
   right: 'absolute inset-y-0 -right-2 z-10 w-4',
 };
 
-/** The place at one side of a block while a part is dragged. Nothing at rest: Width, Shrink and Widen are the keyboard way. */
+interface Drop {
+  setNodeRef(el: HTMLElement | null): void;
+  isOver: boolean;
+}
+
+/**
+ * dnd-kit re-renders every droppable each time the place under the pointer changes. The hook sits in this thin component and
+ * the drawing is a memo, so a drag moving over the page re-renders these shells and the two bars that change (isOver), not the chrome.
+ */
 export function SideZone({ target, side }: { target: LayoutLayer; side: SideTarget['side'] }) {
   const { drag, sideZones } = useDesign();
   const key = sideKey(target.id, side);
   const allowed = drag !== null && sideZones.has(key);
   const { setNodeRef, isOver } = useDroppable({ id: `zone:${key}`, data: { kind: 'side', targetId: target.id, side }, disabled: !allowed });
+  return allowed ? <SideBox zone={key} side={side} setNodeRef={setNodeRef} isOver={isOver} /> : null;
+}
+
+/** The place at one side of a block while a part is dragged. Nothing at rest: Width, Shrink and Widen are the keyboard way. */
+const SideBox = memo(function SideBox({ zone: key, side, setNodeRef, isOver }: Drop & { zone: string; side: SideTarget['side'] }) {
   const [box, setBox] = useDropBox(setNodeRef);
-  if (!allowed) return null;
   return (
     <div ref={setBox} data-zone={key} className={`${SIDE_EDGE[side]} pointer-events-none`}>
       <ChromePortal targetRef={box} active className="flex items-center justify-center">
@@ -81,20 +93,27 @@ export function SideZone({ target, side }: { target: LayoutLayer; side: SideTarg
       </ChromePortal>
     </div>
   );
-}
+});
 
-export default function DropZone({ parent, index, position, orientation = 'block' }: Props) {
-  const { root, drag, zones, pending, addHere, tree, menuPosition, selectedId } = useDesign();
-  const key = zoneKey(parent.id, index);
+export default function DropZone(props: Props) {
+  const { drag, zones, tree } = useDesign();
+  const key = zoneKey(props.parent.id, props.index);
   const dragging = drag !== null;
   const allowed = dragging && zones.has(key);
   // The menu bar's places have a droppable id of their own, so a layer id used in both trees (stored data) never makes two droppables one.
-  const { setNodeRef, isOver } = useDroppable({ id: `${tree === 'menu' ? 'mzone' : 'zone'}:${key}`, data: { parentId: parent.id, index, tree }, disabled: !allowed });
+  const { setNodeRef, isOver } = useDroppable({ id: `${tree === 'menu' ? 'mzone' : 'zone'}:${key}`, data: { parentId: props.parent.id, index: props.index, tree }, disabled: !allowed });
+  if (dragging && !allowed) return null;
+  return <ZoneBox {...props} setNodeRef={setNodeRef} isOver={isOver} />;
+}
+
+const ZoneBox = memo(function ZoneBox({ parent, index, position, orientation = 'block', setNodeRef, isOver }: Props & Drop) {
+  const { root, drag, pending, addHere, tree, menuPosition, selectedId } = useDesign();
+  const key = zoneKey(parent.id, index);
+  const dragging = drag !== null;
   const [box, setBox] = useDropBox(setNodeRef);
   const hintId = useId();
   const chosen = pending !== null && !('kind' in pending) && pending.tree === tree && pending.parentId === parent.id && pending.index === index;
 
-  if (dragging && !allowed) return null;
   // The button shows for the places of the container that holds the selected part and for an empty container; the others show on focus.
   const nearSelection = selectedId !== null && Array.isArray(parent.children) && parent.children.some((c) => c.id === selectedId);
   // An empty page says what to do on the page itself, once, in neutral text; its Add here button stays in the tab order (and the shelf
@@ -141,4 +160,4 @@ export default function DropZone({ parent, index, position, orientation = 'block
       </ChromePortal>
     </div>
   );
-}
+});

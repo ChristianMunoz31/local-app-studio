@@ -8,9 +8,9 @@ import http from 'node:http';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { hangingChat, installFakeOllama, textReply } from './helpers/fakeOllama.js';
 import { __resetAiForTests, isAiQueueFull } from '../ai/index.js';
 import { __resetPendingActionsForTests } from '../agents/pendingActions.js';

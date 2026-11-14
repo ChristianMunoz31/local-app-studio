@@ -16,11 +16,15 @@ function dataTableProps(ctx: PartContext) {
   });
 }
 
+/** Inline editing of cells (ADR-017): set in Design only, so the helper's schema and prompt do not carry it. */
+export const TABLE_EDIT_MODES = ['off', 'cells'] as const;
+
 export const dataTableDef: PartDefinition = {
   name: 'DataTable',
   group: 'data',
   description: 'Rows of a list source as a table. Up to 8 columns. rowAction runs on a row click.',
   props: dataTableProps,
+  designProps: (ctx) => dataTableProps(ctx).extend({ edit: z.enum(TABLE_EDIT_MODES).default('off') }),
   children: 'none',
   binds: [
     { prop: 'source', kind: 'source', mode: 'list' },

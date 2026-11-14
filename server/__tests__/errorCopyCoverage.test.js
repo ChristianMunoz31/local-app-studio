@@ -55,9 +55,9 @@ function scanServerCodes() {
 }
 
 describe('error copy table', () => {
-  it('has 186 codes, none in both files, all snake_case', () => {
+  it('has 187 codes, none in both files, all snake_case', () => {
     expect(ERROR_CODES).toHaveLength(Object.keys(CORE_ERROR_COPY).length + Object.keys(STUDIO_ERROR_COPY).length);
-    expect(ERROR_CODES).toHaveLength(186);
+    expect(ERROR_CODES).toHaveLength(187);
     for (const code of Object.keys(CORE_ERROR_COPY)) expect(Object.hasOwn(STUDIO_ERROR_COPY, code)).toBe(false);
     for (const code of ERROR_CODES) expect(code).toMatch(CODE_RE);
   });

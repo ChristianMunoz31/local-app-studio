@@ -1,12 +1,12 @@
-// GET /api/settings/ai/setup: every first-run state, on a fake Ollama (mocked node-fetch).
+// GET /api/settings/ai/setup: every first-run state, on a fake Ollama (mocked fetch seam).
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import express from 'express';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { MODELS, installFakeOllama } from './helpers/fakeOllama.js';
 import { __resetAiForTests } from '../ai/index.js';
 import { AI_SETTINGS_KEY } from '../ai/settings.js';

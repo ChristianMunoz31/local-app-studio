@@ -12,8 +12,10 @@ import { columnsDef } from '@local-app-studio/runtime/catalog/parts/Columns.def.
 import { dataTableDef } from '@local-app-studio/runtime/catalog/parts/DataTable.def.ts';
 import { dividerDef } from '@local-app-studio/runtime/catalog/parts/Divider.def.ts';
 import { filterBarDef } from '@local-app-studio/runtime/catalog/parts/FilterBar.def.ts';
+import { globalSearchDef } from '@local-app-studio/runtime/catalog/parts/GlobalSearch.def.ts';
 import { gridDef } from '@local-app-studio/runtime/catalog/parts/Grid.def.ts';
 import { headingDef } from '@local-app-studio/runtime/catalog/parts/Heading.def.ts';
+import { kanbanDef } from '@local-app-studio/runtime/catalog/parts/Kanban.def.ts';
 import { linkDef } from '@local-app-studio/runtime/catalog/parts/Link.def.ts';
 import { navLinksDef } from '@local-app-studio/runtime/catalog/parts/NavLinks.def.ts';
 import { pageDef } from '@local-app-studio/runtime/catalog/parts/Page.def.ts';
@@ -70,6 +72,8 @@ export const PART_DEFINITIONS: readonly PartDefinition[] = [
   checklistDef,
   sortControlDef,
   quickAddDef,
+  globalSearchDef,
+  kanbanDef,
 ];
 
 export const PART_NAMES: readonly string[] = PART_DEFINITIONS.map((d) => d.name);

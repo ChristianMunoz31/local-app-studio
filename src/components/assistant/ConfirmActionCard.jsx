@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { CheckSquare } from 'lucide-react';
 import { toolLabel } from '../../hooks/useAssistant';
-import { RECORD_TEXT_NOTICE, readsLikeInstruction } from './recordTextNotice';
+import { INSTRUCTION_TEXT_NOTICE, RECORD_TEXT_NOTICE, originNotices, readsLikeInstruction } from './recordTextNotice';
 
 // The generic write of a built app carries `args.display`: one { label, value } string pair per changed field to show under the summary.
 const displayRows = (args) =>
@@ -21,7 +21,16 @@ export default function ConfirmActionCard({ action, onRespond }) {
   const rows = displayRows(action.args);
   const working = status === 'working';
   const settled = status === 'approved' || status === 'declined' || status === 'expired';
-  const checkText = readsLikeInstruction([summary, ...rows.map((r) => r.value)]);
+  // The server's mark (action.origin) is shown in its own words. The regex guess stays on as a second line unless the server
+  // already said the values match record text, so a paraphrase the server match missed can still be flagged.
+  const originLines = originNotices(action.origin);
+  // The display values are clipped to 120 characters, so the full string values of the write are scanned too.
+  const fullValues =
+    action.args?.values !== null && typeof action.args?.values === 'object'
+      ? Object.values(action.args.values).filter((v) => typeof v === 'string')
+      : [];
+  const checkText = action.origin?.fromRecord !== true && readsLikeInstruction([summary, ...rows.map((r) => r.value), ...fullValues]);
+  const checkNotice = action.origin ? INSTRUCTION_TEXT_NOTICE : RECORD_TEXT_NOTICE;
   const cardRef = useRef(null);
 
   // Never take focus on mount. When the status changes, pull focus to the card only if it
@@ -66,8 +75,14 @@ export default function ConfirmActionCard({ action, onRespond }) {
         </dl>
       )}
       {checkText && !settled && (
-        <p className="mt-1.5 text-xs text-accent-amber">{RECORD_TEXT_NOTICE}</p>
+        <p className="mt-1.5 text-xs text-accent-amber">{checkNotice}</p>
       )}
+      {!settled &&
+        (originLines ?? []).map((line) => (
+          <p key={line} className="mt-1.5 text-xs text-accent-amber">
+            {line}
+          </p>
+        ))}
       {settled ? (
         <p role="status" className="mt-1.5 flex items-center gap-1 text-xs text-slate-slate300">
           {status === 'approved' && <CheckSquare size={12} className="text-accent-green" aria-hidden="true" />}

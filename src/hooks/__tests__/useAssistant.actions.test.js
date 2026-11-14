@@ -87,6 +87,23 @@ describe('useAssistant confirm.required', () => {
     expect(result.current.pendingCount).toBe(1);
   });
 
+  it('keeps the server origin mark on the action, and null when the payload has none', async () => {
+    const origin = { fromRecord: true, unasked: true, fields: ['Name'] };
+    mockFetch.mockResolvedValueOnce(
+      sseResponse([sseEvent('confirm.required', { token: 'tok9', name: 'save_record__crews', args: {}, summary: 'Add', origin }), sseEvent('run.done', { pending: 1 })]),
+    );
+    const { result } = renderHook(() => useAssistant());
+    await act(async () => {
+      await result.current.send('add milk');
+    });
+    expect(result.current.actions[0].origin).toEqual(origin);
+    mockFetch.mockResolvedValueOnce(confirmStream());
+    await act(async () => {
+      await result.current.send('add more');
+    });
+    expect(result.current.actions.at(-1).origin).toBeNull();
+  });
+
   it('approving posts the decision and marks the action approved', async () => {
     mockFetch.mockResolvedValueOnce(confirmStream());
     const { result } = renderHook(() => useAssistant());

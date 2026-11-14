@@ -119,6 +119,20 @@ describe('buildExportZip', () => {
     expect(files['csv/probe_items.csv']).not.toContain("'5.5");
   });
 
+  it('leaves the hidden keys (license activation, the second backup folder) out of the export', async () => {
+    seedDb(db, {
+      app_state: [
+        { key: 'backup.copyTo', value: { folder: 'D:/Backups/Alex', changedAt: null }, updated_at: '2026-01-01T00:00:00.000Z' },
+        { key: 'license.activation', value: { email: 'a@example.test' }, updated_at: '2026-01-01T00:00:00.000Z' },
+        { key: 'theme', value: 'dark', updated_at: '2026-01-01T00:00:00.000Z' },
+      ],
+    });
+    const files = unzip((await buildExportZip({ db })).zip);
+    expect(JSON.parse(files['json/app_state.json']).map((r) => r.key)).toEqual(['theme']);
+    expect(files['csv/app_state.csv']).not.toContain('Backups');
+    expect(files['csv/app_state.csv']).not.toContain('backup.copyTo');
+  });
+
   it('redacts secret-like app_state rows in both JSON and CSV', async () => {
     seedDb(db, {
       app_state: [

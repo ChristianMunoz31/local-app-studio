@@ -31,6 +31,8 @@ import {
 import { ASSISTANT_TOOLS, INTERNAL_TOOLS, WRITE_TOOLS, canonicalizeToolCall, executeTool, precheckWrite } from './assistantTools.js';
 import { UNKNOWN_TOOL_SENTENCE, clipToolName, extractTextToolCalls, normalizeToolCalls, refuseTextToolCalls, validateToolArgs } from './toolCalls.js';
 import { withNoChangeNote } from './changeClaim.js';
+import { computeSaveOrigin, isUnasked } from './saveOrigin.js';
+import { returnedText, withUrgeNote } from './urgeNote.js';
 import { readTarget, readVerb, withRefusedReadGuard } from './refusedRead.js';
 import { withNumberGround } from './numberGround.js';
 import { plainToolWords } from './toolWords.js';
@@ -257,12 +259,16 @@ export async function runAssistant({ conversationId, prompt, page, onEvent, abor
   };
   const guard = (text) =>
     plainToolWords(
-      withNoChangeNote(withNumberGround(withRefusedReadGuard(withoutTextCalls(text), reads), { results, prompt: `${prompt} ${todayString()}` }), {
-        wrote: ctx.writeCount > 0,
-        parked: pending > 0,
-        readOk: reads.some((r) => r.ok),
-        approved: approvedSinceLastTurn,
-      }),
+      withUrgeNote(
+        withNoChangeNote(withNumberGround(withRefusedReadGuard(withoutTextCalls(text), reads), { results, prompt: `${prompt} ${todayString()}` }), {
+          wrote: ctx.writeCount > 0,
+          parked: pending > 0,
+          readOk: reads.some((r) => r.ok),
+          approved: approvedSinceLastTurn,
+        }),
+        // Appended note only: a reply that urges approving a change nobody asked for, after a read that returned record text.
+        { parked: pending > 0, wrote: ctx.writeCount > 0, readText: returnedText(results), unasked: isUnasked(messages, prompt) },
+      ),
       tableLabel,
     );
   const aborted = () => abort.aborted || signal?.aborted;
@@ -414,10 +420,20 @@ export async function runAssistant({ conversationId, prompt, page, onEvent, abor
             } else {
               args = pre.args;
               const what = describeWrite(call.name, args);
-              const token = createPendingAction({ conversationId: conversationId || null, name: call.name, args, callId: call.id, ctx });
+              // Decided here from the stored read results and the person's own words, never from the model's output.
+              const origin = computeSaveOrigin({
+                messages,
+                prompt,
+                values: args.values,
+                display: args.display,
+                unchanged: pre.unchanged,
+                stored: pre.stored,
+                optionFields: pre.optionFields,
+              });
+              const token = createPendingAction({ conversationId: conversationId || null, name: call.name, args, callId: call.id, ctx, origin });
               parked.push({ token, name: call.name, args, summary: what });
               result = { status: 'awaiting_confirmation', summary: what };
-              onEvent?.({ type: 'confirm.required', token, name: call.name, args, summary: what });
+              onEvent?.({ type: 'confirm.required', token, name: call.name, args, summary: what, origin });
             }
           }
         }

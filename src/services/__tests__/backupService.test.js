@@ -7,6 +7,7 @@ import {
   getStableCopyStatus,
   listBackups,
   restoreBackup,
+  setCopyTo,
   updateBackupSettings,
   uploadBackupFile,
 } from '../backupService';
@@ -65,6 +66,25 @@ describe('backupService requests', () => {
     };
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(404, refused)));
     await expect(copyFromStable()).rejects.toMatchObject({ status: 404, code: 'stable_not_found', message: refused.message });
+  });
+
+  it('sets and clears the second folder with a PUT body of exactly { folder }', async () => {
+    const data = { enabled: true, folder: 'D:\\B', health: 'pending' };
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(200, { data }));
+    vi.stubGlobal('fetch', fetchMock);
+    await expect(setCopyTo('D:\\B')).resolves.toEqual(data);
+    await setCopyTo(null);
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/backups/copy-to');
+    expect(init.method).toBe('PUT');
+    expect(JSON.parse(init.body)).toEqual({ folder: 'D:\\B' });
+    expect(JSON.parse(fetchMock.mock.calls[1][1].body)).toEqual({ folder: null });
+  });
+
+  it('surfaces the plain sentence of a refused folder', async () => {
+    const refused = { error: 'That folder was not found. Create it first, then try again.', message: 'That folder was not found. Create it first, then try again.', code: 'invalid_settings', reason: 'missing' };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(400, refused)));
+    await expect(setCopyTo('Z:\\x')).rejects.toMatchObject({ status: 400, code: 'invalid_settings', message: refused.error });
   });
 
   it('creates a backup with a JSON body and returns the summary', async () => {

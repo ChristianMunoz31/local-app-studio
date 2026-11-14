@@ -2,7 +2,7 @@
 // migrate, listen, scheduler) plus the scheduler's jobs must make zero outbound connections.
 // The stored license activation case is pro/server/__tests__/noNetworkLicenseStartup.test.js.
 // Guarded at two levels: a stubbed fetch, and a spy on net.Socket.prototype.connect, which every
-// http/https/tls client (including named ESM imports and node-fetch) ends up calling.
+// http/https/tls client (including named ESM imports and the fetch seam) ends up calling.
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import fs from 'node:fs';
 import net from 'node:net';
@@ -11,7 +11,7 @@ import path from 'node:path';
 import request from 'supertest';
 
 vi.mock('../../loadEnv.js', () => ({}));
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
 const NETWORK_ENV = [
   'GROQ_API_KEY',

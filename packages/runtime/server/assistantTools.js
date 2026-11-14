@@ -282,24 +282,41 @@ function listRecords(compiled, table, args) {
   return { table, total: count(table, { where: m.where, search }), filter: m.filter, scope, rows: withLinkTitles(compiled, table, rows) };
 }
 
-const titleOf = (compiled, table, ...sources) => {
+// Cut by code points, so a surrogate pair (an emoji) is never split; `hidden` is how many code points are left out.
+function clipChars(text, max) {
+  const chars = Array.from(text);
+  return { text: chars.length > max ? chars.slice(0, max).join('') : text, hidden: Math.max(0, chars.length - max) };
+}
+
+/** The whole display title of a record (trimmed), or null when it has none. */
+function fullTitle(compiled, table, ...sources) {
   const field = compiled.titleFields?.[table];
-  if (!field || field === 'id') return '(untitled)';
+  if (!field || field === 'id') return null;
   for (const source of sources) {
     const v = source?.[field];
-    if (typeof v === 'string' && v.trim() !== '') return v.trim().slice(0, MAX_DISPLAY_CHARS);
+    if (typeof v === 'string' && v.trim() !== '') return v.trim();
   }
-  return '(untitled)';
+  return null;
+}
+
+// A title cut to MAX_DISPLAY_CHARS characters (list rows and labels).
+const titleOf = (compiled, table, ...sources) => {
+  const full = fullTitle(compiled, table, ...sources);
+  return full === null ? '(untitled)' : clipChars(full, MAX_DISPLAY_CHARS).text;
 };
 
-function displayValue(compiled, rule, value) {
+// `marked`: the confirmation card's rows say how much of a long value is not shown instead of cutting it silently.
+function displayValue(compiled, rule, value, { marked = false } = {}) {
   if (value === null || value === undefined) return '(empty)';
   if (rule.type === 'boolean') return value ? 'Yes' : 'No';
   if (rule.type === 'reference') {
-    const target = selectOne(rule.table, { where: { id: value } });
-    return titleOf(compiled, rule.table, target);
+    const full = fullTitle(compiled, rule.table, selectOne(rule.table, { where: { id: value } }));
+    if (full === null) return '(untitled)';
+    const { text, hidden } = clipChars(full, MAX_DISPLAY_CHARS);
+    return marked && hidden > 0 ? `${text} (${hidden} more characters not shown)` : text;
   }
-  return String(value).slice(0, MAX_DISPLAY_CHARS);
+  const { text, hidden } = clipChars(String(value), MAX_DISPLAY_CHARS);
+  return marked && hidden > 0 ? `${text} (${hidden} more characters not shown)` : text;
 }
 
 /**
@@ -348,7 +365,11 @@ function prepareSave(compiled, table, args) {
  * Check a canonical save before it is parked for the user's confirmation.
  * @param {string} name canonical tool name
  * @param {Record<string, unknown>} args { id?, values }
- * @returns {Promise<{ ok: true, args: Record<string, unknown>, label?: string } | { ok: false, error: string }>}
+ * @returns {Promise<{ ok: true, args: Record<string, unknown>, label?: string, unchanged?: string[], stored?: Record<string, string>,
+ *   optionFields?: string[] } | { ok: false, error: string }>}
+ * `unchanged` (an update only): the field ids whose value equals the stored one. `stored` (an update only): the stored value
+ * of each changed text field. `optionFields`: the changed fields whose rule has spec-defined options (select fields). A long
+ * display value, or a link title in it, ends with a note saying how many characters are not shown; `args.title` is whole.
  */
 export async function precheckRuntimeWrite(name, args = {}) {
   const compiled = getCompiledSpec();
@@ -358,12 +379,21 @@ export async function precheckRuntimeWrite(name, args = {}) {
   if (!prep.ok) return prep;
   const rules = compiled.validators[parsed.table];
   const display = Object.keys(prep.row)
-    .map((fid) => ({ label: rules[fid].label, value: displayValue(compiled, rules[fid], prep.row[fid]) }));
-  const title = titleOf(compiled, parsed.table, prep.row, prep.existing);
+    .map((fid) => ({ label: rules[fid].label, value: displayValue(compiled, rules[fid], prep.row[fid], { marked: true }) }));
+  // args.title keeps the whole title: the summary line (describeWrite) cuts it and says how much is not shown.
+  const title = fullTitle(compiled, parsed.table, prep.row, prep.existing) ?? '(untitled)';
+  const unchanged = prep.existing ? Object.keys(prep.row).filter((fid) => sameValue(prep.row[fid], prep.existing[fid])) : [];
+  const stored = prep.existing
+    ? Object.fromEntries(Object.keys(prep.row).filter((fid) => typeof prep.existing[fid] === 'string').map((fid) => [fid, prep.existing[fid]]))
+    : {};
+  const optionFields = Object.keys(prep.row).filter((fid) => Array.isArray(rules[fid].options) && rules[fid].options.length > 0);
   return {
     ok: true,
     args: { ...(prep.id !== undefined ? { id: prep.id } : {}), values: prep.row, title, display },
-    label: title,
+    label: titleOf(compiled, parsed.table, prep.row, prep.existing),
+    ...(unchanged.length > 0 ? { unchanged } : {}),
+    ...(Object.keys(stored).length > 0 ? { stored } : {}),
+    ...(optionFields.length > 0 ? { optionFields } : {}),
   };
 }
 

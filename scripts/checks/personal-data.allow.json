@@ -1,7 +1,9 @@
 {
   "_comment": "Deliberate public values the personal-data check must not flag. A string exempts a finding only when it equals the WHOLE match (an email, phone, card, or home path such as Users/sam); a denylist term is exempt only inside an allowed string with non-word edges. So an allowed short address never excuses a longer one that ends with it, and Users/sam never excuses Users/samantha. `strings` apply to every file (empty by default; add your own public handle here if the check flags it). `perPath` entries apply only to files matching the glob: they hold synthetic fixtures in redaction, path and IP tests. `paths` are globs of whole files to skip; keep that list empty if possible.",
   "paths": [],
-  "strings": [],
+  "strings": [
+    "local-app-studio-probe"
+  ],
   "perPath": [
     {
       "path": "server/__tests__/auditHardening.test.js",
@@ -132,6 +134,12 @@
       "path": "src-tauri/tauri.dev.conf.json",
       "strings": [
         "128x128@2x.png"
+      ]
+    },
+    {
+      "path": "server/__tests__/exportCsvDownload.test.js",
+      "strings": [
+        "local-app-studio-probe_items"
       ]
     }
   ]

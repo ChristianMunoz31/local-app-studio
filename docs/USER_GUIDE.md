@@ -19,6 +19,8 @@ The words used in Studio:
 - **Installer**: the Windows file you share.
 - **App file**: an exported app. **Feature file**: an exported feature.
 
+Local App Studio is for one PC and one user at a time. Never put its data folder or `app.db` in a synced or shared folder (OneDrive, Dropbox, a network share): SQLite with its WAL files can be corrupted by sync or file sharing. To get copies off this PC, use the second backup location (**Settings**, **Data & storage**, **Backups**, "Also copy each new backup to") or **Export all data**.
+
 ## 2. The five steps and the save rule
 
 Open an app from the **Apps** page and you see, from top to bottom:
@@ -284,6 +286,23 @@ A cell that starts with =, +, - or @ is kept as plain text and never worked out.
 **Export** on an app's card saves the design only. **Export with records** (the next item in **More actions**) saves a ZIP named after the app, for example "Invoices and Clients app.zip", with the design (app.json) and every table as JSON and CSV. The records come from the app's Preview, so start the preview of that app first ("Start the preview of this app first. Its records live there."). An installer never holds records, only the design.
 
 To bring the records back, build and install the app, open its **Settings**, then **Data and storage**, **Import data**, and pick the ZIP. The same ZIP also restores through `npm run import`. Studio itself imports only the design file (app.json), not the ZIP. Imported rows keep their numbers, and the next new record is numbered above the highest one.
+
+### Download one table as CSV
+
+In a built app, open a table from **Look at your data** and press **Download CSV** next to **Export this table**. You get one plain `.csv` file of that table (named like "local-app-studio-crews-2026-11-13-09-30-00.csv") that opens in a spreadsheet. **Export this table** still gives a ZIP. A cell that starts with =, +, - or @ has a ' put in front of it so the spreadsheet does not work it out as a formula. If the table is larger than the export limit, the file stops at the limit; if the download breaks part way, the browser shows a failed download rather than a short file.
+
+### Backups, and a second copy
+
+Settings, **Data & storage**, **Backups** keeps a backup of your data every day on this PC (**Back up now** makes one at once). A backup on the same disk does not help if the PC dies, so you can also copy each new backup to another place.
+
+1. In **Backups**, type the full folder path in **Also copy each new backup to**, for example `D:\Backups\MyApp` or `\\server\share\MyApp`, and press **Save**. The folder must already exist, must be somewhere you can save files, and must not be inside the data folder. Pick a folder on another drive, a network share or a synced folder such as OneDrive. **Turn off** stops the copying and keeps the files already there.
+2. A network or synced folder means the copies leave this PC. Saved API keys are never in a backup, so they are not in the copies, but your records are.
+3. When you save a folder, the newest backup is copied at once. After that each new backup is copied when it is made, and a copy that failed is tried again within the hour. Only the files this app put there are ever removed (the same 7 daily, 4 weekly and 6 monthly are kept); nothing else in that folder is touched.
+4. The copy never slows or blocks the backup on this PC. If the copy fails (the drive is missing, the folder is full or read only), the backup on this PC is fine, the Backups settings say when it last worked and why it failed, and **Home** shows a warning with **Open backup settings** until the next copy works.
+
+To restore from a copy: in **Backups** press **Restore from a file** and pick the `.db` file from the second folder (named `local-app-studio-<date>-<kind>-<id>.db`). The restore screen does not list the second folder, and restoring from a copy works like restoring from any file you pick.
+
+Never put the data folder or `app.db` in a synced or shared folder. The second copy is the safe way to get backups off this PC.
 
 ## 10. Features
 

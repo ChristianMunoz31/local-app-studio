@@ -3,6 +3,7 @@ import { crewCtx, crewSpec, exampleCtx, homeCtx, layer } from '@/catalog/__tests
 import { PART_DEFINITIONS } from '@/catalog/definitions';
 import { SEED_FEATURES } from '@/catalog/features';
 import { checkLayer, partContextFor } from '@/catalog/validateLayout';
+import { specFeatures } from '@local-app-studio/runtime/runtime/specCompat.js';
 import { LIMITS, LayerSizingSchema } from '@local-app-studio/runtime/spec/schema';
 import type { LayoutLayer } from '@local-app-studio/runtime/spec/schema';
 import { LAYER_WIDTHS } from '@local-app-studio/runtime/spec/sizing';
@@ -308,6 +309,17 @@ describe('configureLayer', () => {
       { ...layer('blk', 'Section', { title: 'Block' }), feature: marker },
     ]);
   const propsOf = (root: LayoutLayer, id: string): Record<string, unknown> => findLayer(root, id)!.layer.props;
+
+  it('puts DataTable edit back to off by removing the prop, so the spec no longer needs table-inline-edit', () => {
+    const on = must(configureLayer(page(), 'list', { 'props.edit': 'cells' }, ctx));
+    expect(propsOf(on, 'list').edit).toBe('cells');
+    const off = must(configureLayer(on, 'list', { 'props.edit': 'off' }, ctx));
+    expect(Object.hasOwn(propsOf(off, 'list'), 'edit')).toBe(false);
+    const specOn = { pages: [{ id: 'p', layout: on }] };
+    const specOff = { pages: [{ id: 'p', layout: off }] };
+    expect(specFeatures(specOn)).toContain('table-inline-edit');
+    expect(specFeatures(specOff)).not.toContain('table-inline-edit');
+  });
 
   it('writes text, title and field settings by their place', () => {
     expect(findLayer(must(configureLayer(page(), 'head', { children: 'People' }, ctx)), 'head')!.layer.children).toBe('People');

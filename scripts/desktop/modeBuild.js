@@ -30,7 +30,7 @@ const SERVER_SEAMS = [
   [path.join('src', 'modules', 'studio.assistant.js'), path.join('src', 'modules', 'studio.assistant.disabled.js')],
 ];
 
-/** Repo-relative, forward-slash path prefixes no runtime build may load (all of src/vendor/ is the unused vendored editor). */
+/** Repo-relative, forward-slash path prefixes no runtime build may load (src/vendor/ held the vendored editor, now removed; kept so a vendored folder added again can never reach a runtime build). */
 const UI_FORBIDDEN = ['src/studio/', 'server/studio/', 'src/catalog/features/', 'src/vendor/'];
 /** The Studio code that also has a twin under a pro folder (the helper's pipeline, the build service), relative to that folder. */
 const PRO_STUDIO_PARTS = ['server/studio/', 'src/studio/'];

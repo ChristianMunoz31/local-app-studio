@@ -186,7 +186,7 @@ export function plainMessage(message: string, spec?: AppSpec | null, before?: Ap
   if (small) return `This needs at least ${small[1]} characters.`;
   if (/^Too big/.test(message)) return 'This is too long.';
   if (/has no source/.test(message)) return 'This part needs a table. Press Connect on it.';
-  if (/^The menu bar can only hold:/.test(message)) return 'The menu bar takes buttons, links, search boxes, quick adds, text and rows.';
+  if (/^The menu bar can only hold:/.test(message)) return 'The menu bar takes buttons, links, search boxes, global search, quick adds, text and rows.';
   const hold = HOLD_RE.exec(message);
   const base = hold ? `${hold[1]} can only hold: ${typesInWords(hold[2])}.` : message;
   return base.replace(PASCAL_RE, (type) => partLabel(type));

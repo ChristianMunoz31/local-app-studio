@@ -1,19 +1,17 @@
-// The catalog as a ui-builder ComponentRegistry (docs/CATALOG.md, "Mapping a part to a ui-builder registry entry").
-// One entry per part. The designer adds its field overrides on top (src/studio/designerRegistry.tsx); the renderer
-// (/preview, the runtime) needs none. UI only: the pure files never import this.
+// The catalog as a part registry (docs/CATALOG.md, "Mapping a part to a registry entry"): one entry per part, with its
+// component, props schema and where it may be added. UI only: the pure files never import this.
 import * as z from 'zod';
-import type { ComponentRegistry } from '@/vendor/ui-builder/components/ui/ui-builder/types';
 import { PART_DEFINITIONS } from './definitions.ts';
 import { PART_COMPONENTS } from './components.ts';
+import type { ComponentRegistry, RegistryComponent, RegistryEntry } from './registryTypes.ts';
 import type { PartContext, PartDefinition } from './types.ts';
 
 // Each component takes the part's parsed props plus children; the registry only ever renders them with those.
-type RegistryComponent = NonNullable<ComponentRegistry[string]['component']>;
 const COMPONENTS: Readonly<Record<string, RegistryComponent>> = PART_COMPONENTS as unknown as Readonly<Record<string, RegistryComponent>>;
 
-function entryFor(def: PartDefinition, ctx: PartContext): ComponentRegistry[string] {
+function entryFor(def: PartDefinition, ctx: PartContext): RegistryEntry {
   const props = def.props(ctx);
-  // ui-builder edits and renders children through the schema: text parts take a string, container parts any layers.
+  // Children go through the schema: text parts take a string, container parts any layers.
   const schema =
     def.children === 'text' ? props.extend({ children: z.string() }) : def.children === 'parts' ? props.extend({ children: z.unknown().optional() }) : props;
   return {

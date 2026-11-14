@@ -130,9 +130,10 @@ describe('GET /api/backups and /api/backups/status', () => {
     expect(res.status).toBe(200);
     expect(res.headers['cache-control']).toMatch(/no-store/);
     expect(Object.keys(res.body.data).sort()).toEqual(
-      ['autoChangedAt', 'autoEnabled', 'autoOffReminder', 'autoSwitch', 'diskWarning', 'freeBytes', 'health', 'lastBackupAt', 'lastBackupId', 'lastError', 'lastResult', 'lastRestore', 'lastRunAt', 'lastSuccessAt', 'recoveryRequired', 'restoring'].sort(),
+      ['autoChangedAt', 'autoEnabled', 'autoOffReminder', 'autoSwitch', 'diskWarning', 'freeBytes', 'health', 'lastBackupAt', 'lastBackupId', 'lastError', 'lastResult', 'lastRestore', 'lastRunAt', 'lastSuccessAt', 'recoveryRequired', 'restoring', 'secondCopy'].sort(),
     );
     expect(res.body.data.health).toBe('none');
+    expect(res.body.data.secondCopy).toMatchObject({ enabled: false, folder: null, health: 'off' });
   });
 
   it('unknown sub-paths and unsupported methods do not reach the handlers', async () => {

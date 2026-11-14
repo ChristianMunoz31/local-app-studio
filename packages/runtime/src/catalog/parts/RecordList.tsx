@@ -1,9 +1,10 @@
 import { PILL, TONE_CLASS as PILL_TONE } from '../../../../../src/components/settings/pillStyles.js';
-import { titleFieldOf } from './format.ts';
+import { sourcePageSize, titleFieldOf } from './format.ts';
 import type { Action } from '../../../../../src/catalog/actions.ts';
 import { useSource, useSourceInfo, useTableDef } from '../../../../../src/catalog/context.tsx';
 import { useCellText } from './cells.ts';
 import { EmptyLine, ErrorLine, LoadingLines, Notice } from './DataState.tsx';
+import { Pager } from './Pager.tsx';
 import { useNoticeAction } from './useNoticeAction.ts';
 import { editorDomProps } from './editorProps.ts';
 import type { EditorProps } from './editorProps.ts';
@@ -23,7 +24,9 @@ export function RecordList({ source = '', titleField, subtitleField, badgeField,
   const { className, ...dom } = editorDomProps(rest);
   const info = useSourceInfo(source);
   const table = useTableDef(info?.table ?? null);
-  const { rows, loading, error } = useSource(source);
+  // The page size is asked for by name, the source's own limit by the server's rule, so canvas, Preview and a built app agree.
+  const pageSize = sourcePageSize(info?.limit);
+  const { rows, total, loading, error, offset, setOffset } = useSource(source, { limit: pageSize });
   const { run, notice } = useNoticeAction();
   const title = titleField ?? (table ? titleFieldOf(table) : 'id');
   const shown = [title, subtitleField, badgeField].filter((id): id is string => typeof id === 'string');
@@ -73,6 +76,7 @@ export function RecordList({ source = '', titleField, subtitleField, badgeField,
   return (
     <div {...dom} className={cx('space-y-2', className)}>
       {body}
+      {info && table && <Pager label={table.label} offset={offset} count={rows.length} total={total} pageSize={pageSize} loading={loading} setOffset={setOffset} />}
       <Notice text={notice} />
     </div>
   );

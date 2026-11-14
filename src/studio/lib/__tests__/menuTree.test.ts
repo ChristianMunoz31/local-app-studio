@@ -120,9 +120,9 @@ describe('what may go on the menu bar', () => {
   it('refuses with the validator words, for a part and for a part in a row', () => {
     const tree = menuWith([layer('row_1', 'Row', {}, [])]);
     const refused = insertLayer(tree, at('start', 1), layer('t_new', 'DataTable', { source: 'x' }));
-    expect(refused).toMatchObject({ ok: false, reason: 'not_allowed_here', message: 'The menu bar can only hold: Button, Link, SearchBox, QuickAdd, Text and Row.' });
+    expect(refused).toMatchObject({ ok: false, reason: 'not_allowed_here', message: 'The menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd, Text and Row.' });
     const inRow = insertLayer(tree, { parentId: 'row_1', index: 0 }, layer('r2', 'Row', {}, []));
-    expect(inRow).toMatchObject({ ok: false, message: 'A row in the menu bar can only hold: Button, Link, SearchBox, QuickAdd and Text.' });
+    expect(inRow).toMatchObject({ ok: false, message: 'A row in the menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd and Text.' });
   });
 
   it('locks the bar and both slots against move, remove, replace and Move up and down', () => {
@@ -188,8 +188,15 @@ describe('newMenuLayer', () => {
   });
 
   it('refuses what the bar does not take, in the validator words', () => {
-    expect(newMenuLayer('DataTable', menuCtx(), new Set())).toEqual({ refusal: 'The menu bar can only hold: Button, Link, SearchBox, QuickAdd, Text and Row.' });
+    expect(newMenuLayer('DataTable', menuCtx(), new Set())).toEqual({ refusal: 'The menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd, Text and Row.' });
     expect(newMenuLayer('Divider', menuCtx(), new Set())).toHaveProperty('refusal');
+  });
+
+  it('makes a Global search with no props, in either slot, and still refuses the Board', () => {
+    const made = newMenuLayer('GlobalSearch', menuCtx(), new Set());
+    expect(made).toEqual({ id: 'globalsearch_1', type: 'GlobalSearch', props: {}, children: [] });
+    expect(newMenuLayer('GlobalSearch', menuCtx(), new Set(['globalsearch_1']))).toMatchObject({ id: 'globalsearch_2' });
+    expect(newMenuLayer('Kanban', menuCtx(), new Set())).toHaveProperty('refusal');
   });
 
   it('prefers the tables of the open page: a Button and a Quick add use Crews, not the first table of the app', () => {
@@ -281,7 +288,7 @@ describe('transferLayer', () => {
     const menu = menuWith([text('a')]);
     expect(transferLayer(page, menu, 'page', 'root', at('start'), ctxs())).toMatchObject({ ok: false, reason: 'root_locked' });
     expect(transferLayer(page, menu, 'menu', MENU_SLOT_IDS.start, { parentId: 'root', index: 0 }, ctxs())).toMatchObject({ ok: false, reason: 'root_locked', message: 'The menu bar itself cannot be moved or removed.' });
-    expect(transferLayer(page, menu, 'page', 't1', at('end'), ctxs())).toMatchObject({ ok: false, reason: 'not_allowed_here', message: 'The menu bar can only hold: Button, Link, SearchBox, QuickAdd, Text and Row.' });
+    expect(transferLayer(page, menu, 'page', 't1', at('end'), ctxs())).toMatchObject({ ok: false, reason: 'not_allowed_here', message: 'The menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd, Text and Row.' });
     const block = must(replaceLayer(page, 'h1', { ...text('blk'), feature: { id: 'f', version: 1, params: {} } }));
     expect(transferLayer(block, menu, 'page', 'blk', at('end'), ctxs())).toMatchObject({ ok: false, message: MENU_FEATURE_REFUSAL });
     expect(transferLayer(page, menu, 'page', 'nope', at('end'), ctxs())).toMatchObject({ ok: false, reason: 'not_found' });
@@ -336,7 +343,7 @@ describe('transferLayer', () => {
 describe('fitsMenu', () => {
   it('is true for exactly the six menu parts, and false for features', () => {
     expect(fitsMenu({ kind: 'part', id: 'Button' })).toBe(true);
-    expect(['Button', 'Link', 'SearchBox', 'QuickAdd', 'Text', 'Row'].every((id) => fitsMenu({ kind: 'part', id }))).toBe(true);
+    expect(['Button', 'Link', 'SearchBox', 'GlobalSearch', 'QuickAdd', 'Text', 'Row'].every((id) => fitsMenu({ kind: 'part', id }))).toBe(true);
     expect(fitsMenu({ kind: 'part', id: 'DataTable' })).toBe(false);
     expect(fitsMenu({ kind: 'part', id: 'Divider' })).toBe(false);
     expect(fitsMenu({ kind: 'feature', id: 'Button' })).toBe(false);

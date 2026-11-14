@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vitest';
 import request from 'supertest';
 import { PROTECTED_APP_STATE_KEYS } from '../import/importExport.js';
-import { closeTestDb, createTestDb, resetDb, rowsOf } from './helpers/testDb.js';
+import { closeTestDb, createTestDb, resetDb, rowsOf, seedDb } from './helpers/testDb.js';
 
 vi.mock('../../loadEnv.js', () => ({}));
 
@@ -49,6 +49,18 @@ describe('app state', () => {
     expect(res.status).toBe(403);
     expect(res.body).toMatchObject({ code: 'protected_key' });
     expect(rowsOf(db, 'app_state').filter((r) => r.key === key)).toHaveLength(0);
+  });
+
+  it('never returns the hidden keys (license activation, the second backup folder)', async () => {
+    seedDb(db, {
+      app_state: [
+        { key: 'license.activation', value: { email: 'a@example.test' }, updated_at: '2026-01-01T00:00:00.000Z' },
+        { key: 'backup.copyTo', value: { folder: 'D:/Backups', changedAt: null }, updated_at: '2026-01-01T00:00:00.000Z' },
+        { key: 'theme', value: 'dark', updated_at: '2026-01-01T00:00:00.000Z' },
+      ],
+    });
+    const all = await request(app).get('/api/state');
+    expect(all.body).toEqual({ theme: 'dark' });
   });
 
   it('400s a missing or null value', async () => {

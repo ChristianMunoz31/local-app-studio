@@ -3,9 +3,9 @@
 // probing, availability reasons, provider-aware errors and timeouts.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('node-fetch', () => ({ default: vi.fn() }));
+vi.mock('../net/fetch.js', () => ({ default: vi.fn() }));
 
-import fetch from 'node-fetch';
+import fetch from '../net/fetch.js';
 import { Readable } from 'node:stream';
 import { MODELS, installFakeOllama } from './helpers/fakeOllama.js';
 import { extractTextToolCalls, normalizeToolCalls, parseToolArgs, validateToolArgs } from '../agents/toolCalls.js';

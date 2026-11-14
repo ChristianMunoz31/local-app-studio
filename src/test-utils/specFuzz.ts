@@ -408,13 +408,15 @@ export function quotedIdentifiers(sql: string): string[] {
   return found;
 }
 
-/** The identifiers a script for these specs may use: table ids, field ids, runtime columns, `<id>:new` and `idx:<table>:<field>`. */
+/** The identifiers a script for these specs may use: table ids, field ids, runtime columns, `<id>:new`, `idx:<table>:<field>`, and the full text index `fts:<table>` with its triggers `fts:<table>:ai|ad|au`. */
 export function identifierAllowlist(...specs: Array<AppSpec | AppSpecInput | null>): Set<string> {
   const allowed = new Set<string>(['id', 'created_at', 'updated_at', 'app_schema_version']);
   for (const spec of specs) {
     for (const t of spec?.tables ?? []) {
       allowed.add(t.id);
       allowed.add(`${t.id}:new`);
+      allowed.add(`fts:${t.id}`);
+      for (const k of ['ai', 'ad', 'au']) allowed.add(`fts:${t.id}:${k}`);
       for (const f of t.fields) {
         allowed.add(f.id);
         allowed.add(`idx:${t.id}:${f.id}`);

@@ -86,11 +86,11 @@ describe('plainMessage', () => {
   });
 
   it('turns the menu bar refusals into plain lists', () => {
-    expect(plainMessage('The menu bar can only hold: Button, Link, SearchBox, QuickAdd, Text and Row.')).toBe(
-      'The menu bar takes buttons, links, search boxes, quick adds, text and rows.',
+    expect(plainMessage('The menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd, Text and Row.')).toBe(
+      'The menu bar takes buttons, links, search boxes, global search, quick adds, text and rows.',
     );
-    expect(plainMessage('A row in the menu bar can only hold: Button, Link, SearchBox, QuickAdd and Text.')).toBe(
-      'A row in the menu bar can only hold: Button, Link, Search box, Quick add and Text.',
+    expect(plainMessage('A row in the menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd and Text.')).toBe(
+      'A row in the menu bar can only hold: Button, Link, Search box, Global search, Quick add and Text.',
     );
   });
 
@@ -137,8 +137,8 @@ describe('plainIssue', () => {
     expect(plainIssue(issue('pages.0.layout.children.1', 'DataTable: this page has no source "x". Use one of: none.'), spec())).toBe(
       'Page Home, a part: This part needs a table. Press Connect on it.',
     );
-    expect(plainIssue(issue('menu.start.0.type', 'The menu bar can only hold: Button, Link, SearchBox, QuickAdd, Text and Row.'))).toBe(
-      'Menu bar: The menu bar takes buttons, links, search boxes, quick adds, text and rows.',
+    expect(plainIssue(issue('menu.start.0.type', 'The menu bar can only hold: Button, Link, SearchBox, GlobalSearch, QuickAdd, Text and Row.'))).toBe(
+      'Menu bar: The menu bar takes buttons, links, search boxes, global search, quick adds, text and rows.',
     );
   });
 

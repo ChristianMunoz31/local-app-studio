@@ -17,6 +17,7 @@ vi.mock('../../../services/backupService', async (importOriginal) => {
     createBackup: vi.fn(),
     updateBackupSettings: vi.fn(),
     setAutoBackup: vi.fn(),
+    setCopyTo: vi.fn(),
     uploadBackupFile: vi.fn(),
     restoreBackup: vi.fn(),
   };
@@ -234,6 +235,14 @@ describe('BackupsControl', () => {
     renderControl();
     await screen.findByRole('table');
     expect(screen.queryByText(/Help menu/)).not.toBeInTheDocument();
+  });
+
+  it('never says nothing leaves the computer while a second folder is set', async () => {
+    service.listBackups.mockResolvedValue(LIST({ secondCopy: { enabled: true, folder: 'D:\\Copies', health: 'ok', lastSuccessAt: null } }));
+    renderControl();
+    await screen.findByRole('table');
+    expect(screen.getByText(/about once a day and keeps recent ones\. Each new backup is also copied to your second folder\.$/)).toBeInTheDocument();
+    expect(screen.queryByText(/Nothing leaves your computer/)).not.toBeInTheDocument();
   });
 
   it('shows a plain message when the list cannot load', async () => {

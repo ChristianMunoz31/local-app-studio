@@ -14,12 +14,12 @@ import type { LayoutLayer } from '@local-app-studio/runtime/spec/schema';
 import { plainMessage } from '../lib/issueWords';
 import { MENU_SLOT_IDS } from '../lib/menuTree';
 import { menuSideName } from './designLabels';
-import { DesignContext, useDesign } from './DesignContext';
+import { DesignContext, LiveContext, useDesign } from './DesignContext';
 import DropZone from './DropZone';
 
 export type RenderNode = (layer: LayoutLayer, parent: LayoutLayer, index: number, count: number) => ReactNode;
 
-const FITS = 'Fits here: Button, Link, Search box, Quick add, Text, Row';
+const FITS = 'Fits here: Button, Link, Search box, Global search, Quick add, Text, Row';
 export const EMPTY_SLOT_HINT = 'You can put a button or a search box here.';
 const FULL = 'This side of the menu bar is full.';
 const NOTE = 'text-xs text-slate-slate400';
@@ -104,7 +104,9 @@ export default function MenuCanvas({ renderNode, children }: { renderNode: Rende
   if (menu === null) return <>{children}</>;
   const side = menu.menuPosition === 'side';
   const bar = (
+    // The bar has no resize or grid previews: its scope holds the idle values, so the page's live store is hidden from it.
     <DesignContext.Provider value={menu}>
+      <LiveContext.Provider value={null}>
       <div
         data-menu-canvas=""
         data-menu-position={menu.menuPosition}
@@ -123,6 +125,7 @@ export default function MenuCanvas({ renderNode, children }: { renderNode: Rende
         <PageLinks />
         <Slot name="end" renderNode={renderNode} />
       </div>
+      </LiveContext.Provider>
     </DesignContext.Provider>
   );
   return side ? (

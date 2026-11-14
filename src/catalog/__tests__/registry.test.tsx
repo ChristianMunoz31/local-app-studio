@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import LayerRenderer from '@/vendor/ui-builder/components/ui/ui-builder/layer-renderer';
-import type { ComponentLayer } from '@/vendor/ui-builder/components/ui/ui-builder/types';
+import LayerRenderer from './catalogLayerRenderer.tsx';
+import type { ComponentLayer } from '../registryTypes.ts';
 import type { CatalogData } from '../context.tsx';
 import { CatalogDataContext, useRecord, useSource } from '../context.tsx';
 import { PART_DEFINITIONS } from '../definitions.ts';
@@ -28,7 +28,7 @@ const renderPage = (page: ComponentLayer, data: CatalogData = { apiBase: '/api' 
 
 describe('buildRegistry', () => {
   it('has one entry per part, with a component and a strict schema', () => {
-    expect(Object.keys(registry)).toHaveLength(34);
+    expect(Object.keys(registry)).toHaveLength(36);
     expect(Object.keys(registry)).toEqual(PART_DEFINITIONS.map((d) => d.name));
     for (const def of PART_DEFINITIONS) {
       const entry = registry[def.name];
